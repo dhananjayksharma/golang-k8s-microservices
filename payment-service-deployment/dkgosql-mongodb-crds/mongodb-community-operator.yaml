@@ -1,0 +1,50 @@
+apiVersion: mongodbcommunity.mongodb.com/v1
+kind: MongoDBCommunity
+metadata:
+  name: mongodb-payment-operator
+  namespace: mongodb
+spec:
+  members: 1
+  type: ReplicaSet
+  version: "6.0.5"
+  security:
+    authentication:
+      modes: ["SCRAM"]
+  users:
+    - name: user
+      db: message_db
+      passwordSecretRef:
+        name: mongodb-user-password
+      roles:
+        - name: readWrite
+          db: message_db
+        - name: userAdminAnyDatabase
+          db: admin
+      scramCredentialsSecretName: mongodb-payment-operator
+
+  statefulSet:
+    spec:
+    #     # Name for the service object created by the operator
+    #   serviceName: example-openshift-mongodb-svc
+    #   selector: {}
+    #     # Specifies a size for the data volume different from the default 10Gi
+    #   volumeClaimTemplates:
+    #     - metadata:
+    #         name: data-volume
+    #       spec:
+    #         accessModes: [ "ReadWriteOnce", "ReadWriteMany" ]
+    #         resources:
+    #           requests:
+    #             storage: 50Gi
+
+      template:
+        # Adds a custom volume to the pods
+        spec:
+          volumes:
+            - name: custom-volume
+              emptyDir: {}
+          containers:
+          - name: mongodb-agent
+            volumeMounts:
+              - name: custom-volume
+                mountPath: /my-custom-version/mount-path

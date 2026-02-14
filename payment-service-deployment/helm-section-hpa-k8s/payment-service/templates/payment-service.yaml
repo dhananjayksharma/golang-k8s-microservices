@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.appname.name }}-service
+  namespace: {{ .Values.appname.paymentservicens }}
+spec:
+  selector:
+    app:  {{ .Values.appname.name }}
+  type: NodePort
+  ports:
+    - port: 8112
+      targetPort: 8112
+      nodePort: 30082

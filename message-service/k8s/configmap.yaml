@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: message-service-config
+data:
+  PORT: "8111"
+  MONGO_DB: "message_db"
+  MONGO_COLLECTION: "orders"

@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.appname.name }}-config
+  namespace: {{ .Values.appname.paymentservicens }}
+data:
+  MYSQL_HOST: host.minikube.internal
+  MYSQL_PORT: "3306"
+  MYSQL_DB: dkgosql_cloud_dbs
+  MYSQL_PARAMS: "parseTime=true"

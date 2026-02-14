@@ -1,0 +1,17 @@
+replicaCount: 3
+appname:
+    name: payment-service
+    paymentservicens: payment-service-namespace
+image:
+  repository: payment-service
+  tag: "2.4.0"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8112
+
+resources:
+  limits:
+    cpu: "500m"
+    memory: "512Mi"

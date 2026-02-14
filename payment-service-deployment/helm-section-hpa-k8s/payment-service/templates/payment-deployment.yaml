@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.appname.name }}-deployment
+  namespace: {{ .Values.appname.paymentservicens }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.appname.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.appname.name }}
+        app.kubernetes.io/name: {{ .Values.appname.name }}
+        app.kubernetes.io/component: {{ .Values.appname.name }}
+        app.kubernetes.io/instance: {{ .Values.appname.name }}
+
+    spec:
+      containers:
+        # 🔹 Main application container
+        - name: {{ .Values.appname.name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.IfNotPresent }}
+          resources:
+            requests:
+              memory: {{ .Values.resources.limits.memory }}
+              cpu: {{ .Values.resources.limits.cpu }}
+            limits:
+              memory: {{ .Values.resources.limits.memory }}
+          ports:
+            - containerPort: {{ .Values.service.port }}
+          env:
+            - name: MYSQL_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.appname.name }}-config
+                  key: MYSQL_HOST
+            - name: MYSQL_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.appname.name }}-config
+                  key: MYSQL_PORT
+            - name: MYSQL_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.appname.name }}-config
+                  key: MYSQL_DB
+            - name: MYSQL_PARAMS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.appname.name }}-config
+                  key: MYSQL_PARAMS
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.appname.name }}-secret
+                  key: MYSQL_USER
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.appname.name }}-secret
+                  key: MYSQL_PASSWORD
+            - name: MYSQL_DSN
+              value: "$(MYSQL_USER):$(MYSQL_PASSWORD)@tcp($(MYSQL_HOST):$(MYSQL_PORT))/$(MYSQL_DB)?$(MYSQL_PARAMS)"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ .Values.service.port }}
+            initialDelaySeconds: 15
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ .Values.service.port }}
+            initialDelaySeconds: 15
+            periodSeconds: 10

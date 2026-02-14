@@ -1,0 +1,14 @@
+##
+useStatefulSet: true
+## MongoDB(&reg;) Authentication parameters
+##
+auth:
+  enabled: false
+
+image:
+  registry: docker.io
+  repository: mongo
+  tag: 6.0.4-jammy
+
+persistence:
+  mountPath: /data/db

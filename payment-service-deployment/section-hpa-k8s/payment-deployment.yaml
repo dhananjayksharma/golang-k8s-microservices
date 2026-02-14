@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: payment-service
+  template:
+    metadata:
+      labels:
+        app: payment-service
+        app.kubernetes.io/name: payment-service
+        app.kubernetes.io/component: payment-service
+        app.kubernetes.io/instance: payment-service
+
+    spec:
+      containers:
+        # 🔹 Main application container
+        - name: payment-service
+          image: payment-service:2.4
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "128m"
+            limits:
+              memory: "128Mi"
+          ports:
+            - containerPort: 8112
+          env:
+            - name: MYSQL_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: payment-config
+                  key: MYSQL_HOST
+            - name: MYSQL_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: payment-config
+                  key: MYSQL_PORT
+            - name: MYSQL_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: payment-config
+                  key: MYSQL_DB
+            - name: MYSQL_PARAMS
+              valueFrom:
+                configMapKeyRef:
+                  name: payment-config
+                  key: MYSQL_PARAMS
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: payment-secret
+                  key: MYSQL_USER
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: payment-secret
+                  key: MYSQL_PASSWORD
+            - name: MYSQL_DSN
+              value: "$(MYSQL_USER):$(MYSQL_PASSWORD)@tcp($(MYSQL_HOST):$(MYSQL_PORT))/$(MYSQL_DB)?$(MYSQL_PARAMS)"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8112
+            initialDelaySeconds: 15
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8112
+            initialDelaySeconds: 15
+            periodSeconds: 10
+        # 🔹 Sidecar container (health checker)
+        # - name: payment-service-health-sidecar
+        #   image: busybox:1.36
+        #   command:
+        #     - /bin/sh
+        #     - -c
+        #     - |
+        #       echo "Health sidecar started";
+        #       while true; do
+        #         if wget -qO- http://localhost:8112/healthz > /dev/null; then
+        #           echo "$(date) payment-service healthy";
+        #         else
+        #           echo "$(date) payment-service UNHEALTHY";
+        #         fi
+        #         sleep 5;
+        #       done
