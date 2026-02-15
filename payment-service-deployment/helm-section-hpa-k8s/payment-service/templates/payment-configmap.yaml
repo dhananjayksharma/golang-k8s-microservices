@@ -4,7 +4,7 @@ metadata:
   name: {{ .Values.appname.name }}-config
   namespace: {{ .Values.appname.paymentservicens }}
 data:
-  MYSQL_HOST: host.minikube.internal
+  MYSQL_HOST: dosql12.freesqldatabase.com
   MYSQL_PORT: "3306"
-  MYSQL_DB: dkgosql_cloud_dbs
+  MYSQL_DB: dosql12816677
   MYSQL_PARAMS: "parseTime=true"
