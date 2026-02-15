@@ -1,0 +1,23 @@
+version: "3.9"
+
+services:
+  mysql:
+    image: mysql:8.0
+    env_file:
+      - .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    ports:
+      - "3306:3306"
+
+  api:
+    build: .
+    env_file:
+      - .env
+    environment:
+      MYSQL_DSN: "${MYSQL_ROOT_PASSWORD}:${MYSQL_PASSWORD}@tcp(${MYSQL_HOST}:${MYSQL_PORT})/${MYSQL_DATABASE}?${MYSQL_PARAMS}"
+    ports:
+      - "8111:8111"
+    depends_on:
+      - mysql
