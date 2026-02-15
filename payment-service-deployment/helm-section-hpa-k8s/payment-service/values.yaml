@@ -17,5 +17,8 @@ resources:
     memory: "512Mi"
 
 secrets:
-  mysqlUser: "dosql12816677"
-  mysqlPassword: "wedMGD5e1vdo"
+  # If set, use this existing Secret from the namespace and do not create a new one.
+  # The Secret must contain keys: MYSQL_USER and MYSQL_PASSWORD.
+  existingSecretName: "payment-service-secret"
+  mysqlUser: ""
+  mysqlPassword: ""
