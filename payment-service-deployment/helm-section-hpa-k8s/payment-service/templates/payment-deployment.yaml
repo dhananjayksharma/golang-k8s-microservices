@@ -54,12 +54,12 @@ spec:
             - name: MYSQL_USER
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.appname.name }}-secret
+                  name: {{ default (printf "%s-secret" .Values.appname.name) .Values.secrets.existingSecretName }}
                   key: MYSQL_USER
             - name: MYSQL_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.appname.name }}-secret
+                  name: {{ default (printf "%s-secret" .Values.appname.name) .Values.secrets.existingSecretName }}
                   key: MYSQL_PASSWORD
             - name: MYSQL_DSN
               value: "$(MYSQL_USER):$(MYSQL_PASSWORD)@tcp($(MYSQL_HOST):$(MYSQL_PORT))/$(MYSQL_DB)?$(MYSQL_PARAMS)"

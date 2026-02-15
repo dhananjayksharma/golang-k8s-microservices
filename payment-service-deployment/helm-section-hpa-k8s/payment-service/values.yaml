@@ -1,4 +1,4 @@
-replicaCount: 3
+replicaCount: 1
 appname:
     name: payment-service
     paymentservicens: payment-service-namespace
@@ -15,3 +15,10 @@ resources:
   limits:
     cpu: "500m"
     memory: "512Mi"
+
+secrets:
+  # If set, use this existing Secret from the namespace and do not create a new one.
+  # The Secret must contain keys: MYSQL_USER and MYSQL_PASSWORD.
+  existingSecretName: "payment-service-secret"
+  mysqlUser: ""
+  mysqlPassword: ""
