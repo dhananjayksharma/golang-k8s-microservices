@@ -1,4 +1,4 @@
-replicaCount: 3
+replicaCount: 1
 appname:
     name: payment-service
     paymentservicens: payment-service-namespace
@@ -15,3 +15,7 @@ resources:
   limits:
     cpu: "500m"
     memory: "512Mi"
+
+secrets:
+  mysqlUser: "dosql12816677"
+  mysqlPassword: "wedMGD5e1vdo"
