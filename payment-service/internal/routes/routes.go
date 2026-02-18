@@ -26,4 +26,8 @@ func Register(r *gin.Engine, gdb *gorm.DB) {
 	{
 		v2.GET("/orders", h.Listv2)
 	}
+	v3 := r.Group("/v3")
+	{
+		v3.GET("/orders", h.Listv3)
+	}
 }

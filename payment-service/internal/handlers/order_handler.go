@@ -257,3 +257,47 @@ func (h *OrderHandler) Listv2(c *gin.Context) {
 		"tag":    "updated-version.2.2.0",
 	})
 }
+
+// GET /orders?customer_id=&status=&region=&engine=&limit=&offset=
+func (h *OrderHandler) Listv3(c *gin.Context) {
+	q := h.DB.Model(&models.Order{})
+
+	if v := strings.TrimSpace(c.Query("customer_id")); v != "" {
+		if id, err := strconv.ParseUint(v, 10, 64); err == nil {
+			q = q.Where("customer_id = ?", id)
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid customer_id"})
+			return
+		}
+	}
+
+	if v := strings.TrimSpace(c.Query("status")); v != "" {
+		q = q.Where("order_status = ?", v)
+	}
+	if v := strings.TrimSpace(c.Query("region")); v != "" {
+		q = q.Where("region = ?", v)
+	}
+	if v := strings.TrimSpace(c.Query("engine")); v != "" {
+		q = q.Where("db_engine = ?", v)
+	}
+
+	limit := parseIntWithDefault(c.Query("limit"), 20)
+	offset := parseIntWithDefault(c.Query("offset"), 0)
+	if limit > 100 {
+		limit = 100
+	}
+
+	var items []models.Order
+	if err := q.Order("order_id DESC").Limit(limit).Offset(offset).Find(&items).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"limit":  limit,
+		"offset": offset,
+		"items":  items,
+		"count":  len(items),
+		"tag":    "updated-version.3.0.0",
+	})
+}

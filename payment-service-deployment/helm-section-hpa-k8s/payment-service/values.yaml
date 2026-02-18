@@ -3,9 +3,9 @@ appname:
     name: payment-service
     paymentservicens: payment-service-namespace
 image:
-  repository: payment-service
-  tag: "2.4.0"
-  pullPolicy: IfNotPresent
+  repository: docker.io/dhananjayksharma/payment-service
+  tag: "latest"
+  pullPolicy: Always
 
 service:
   type: ClusterIP
@@ -22,3 +22,7 @@ secrets:
   existingSecretName: "payment-service-secret"
   mysqlUser: ""
   mysqlPassword: ""
+
+mysql:
+  caSecretName: mysql-ca-cert
+  caMountPath: /etc/mysql/certs
