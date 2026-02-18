@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -17,7 +16,6 @@ func main() {
 		log.Fatalf("dsn string not found error: %v", dsn)
 	}
 
-	fmt.Println("dsn::", dsn)
 	capempath := os.Getenv("MYSQL_DBPEM")
 	if capempath == "" || len(capempath) == 0 {
 		log.Fatalf("capempath string not found error: %v", capempath)

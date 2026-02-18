@@ -22,6 +22,10 @@ spec:
         - name: {{ .Values.appname.name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.IfNotPresent }}
+          volumeMounts:
+            - name: mysql-ca-volume
+              mountPath: {{ .Values.mysql.caMountPath }}
+              readOnly: true
           resources:
             requests:
               memory: {{ .Values.resources.limits.memory }}
@@ -46,6 +50,8 @@ spec:
                 configMapKeyRef:
                   name: {{ .Values.appname.name }}-config
                   key: MYSQL_DB
+            - name: MYSQL_DBPEM
+              value: "{{ .Values.mysql.caMountPath }}/ca.pem"
             - name: MYSQL_PARAMS
               valueFrom:
                 configMapKeyRef:
@@ -75,3 +81,8 @@ spec:
               port: {{ .Values.service.port }}
             initialDelaySeconds: 15
             periodSeconds: 10
+      volumes:
+        - name: mysql-ca-volume
+          secret:
+            secretName: {{ .Values.mysql.caSecretName }}
+

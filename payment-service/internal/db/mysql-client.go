@@ -12,6 +12,7 @@ import (
 )
 
 func ConnectMySQL(dsn string, capempath string) (*gorm.DB, error) {
+	// log.Printf("ConnectMySQL capempath:%s", capempath)
 	caCert, err := os.ReadFile(capempath)
 	if err != nil {
 		panic(err)
