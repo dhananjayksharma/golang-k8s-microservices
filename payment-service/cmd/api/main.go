@@ -4,8 +4,8 @@ import (
 	"log"
 	"os"
 
-	"go-gin-mysql-k8s/internal/db"
-	"go-gin-mysql-k8s/internal/routes"
+	"github.com/dhananjayksharma/golang-k8s-microservices/payment-service/internal/db"
+	"github.com/dhananjayksharma/golang-k8s-microservices/payment-service/internal/routes"
 
 	"github.com/gin-gonic/gin"
 )

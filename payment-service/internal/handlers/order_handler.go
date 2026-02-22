@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"go-gin-mysql-k8s/internal/models"
+	"github.com/dhananjayksharma/golang-k8s-microservices/payment-service/internal/models"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"

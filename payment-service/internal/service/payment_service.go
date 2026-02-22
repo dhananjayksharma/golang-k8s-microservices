@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 
-	"go-gin-mysql-k8s/internal/repository"
+	"github.com/dhananjayksharma/golang-k8s-microservices/payment-service/internal/repository"
 )
 
 type PaymentService struct {
