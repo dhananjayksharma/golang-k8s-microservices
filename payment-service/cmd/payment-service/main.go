@@ -3,9 +3,9 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 
-	"go-gin-mysql-k8s/internal/handlers"
-	"go-gin-mysql-k8s/internal/repository"
-	"go-gin-mysql-k8s/internal/service"
+	"github.com/dhananjayksharma/golang-k8s-microservices/payment-service/internal/handlers"
+	"github.com/dhananjayksharma/golang-k8s-microservices/payment-service/internal/repository"
+	"github.com/dhananjayksharma/golang-k8s-microservices/payment-service/internal/service"
 )
 
 func main() {

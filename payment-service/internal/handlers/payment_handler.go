@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"go-gin-mysql-k8s/internal/service"
+	"github.com/dhananjayksharma/golang-k8s-microservices/payment-service/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

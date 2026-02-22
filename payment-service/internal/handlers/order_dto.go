@@ -1,6 +1,6 @@
 package handlers
 
-import "go-gin-mysql-k8s/internal/models"
+import "github.com/dhananjayksharma/golang-k8s-microservices/payment-service/internal/models"
 
 type CreateOrderRequest struct {
 	CustomerID    uint64          `json:"customer_id" binding:"required"`
