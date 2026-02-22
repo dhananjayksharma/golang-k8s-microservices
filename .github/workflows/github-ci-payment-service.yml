@@ -2,11 +2,13 @@ name: ci
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   build-test-push:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -16,6 +18,7 @@ jobs:
           go-version: "1.22"
 
       - name: Test
+        working-directory: payment-service
         run: go test ./... -v
 
       - name: Login to DockerHub
@@ -27,7 +30,8 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ./payment-service
+          file: ./payment-service/Dockerfile
           push: true
           tags: |
             docker.io/${{ secrets.DOCKERHUB_USERNAME }}/payment-service:${{ github.sha }}
