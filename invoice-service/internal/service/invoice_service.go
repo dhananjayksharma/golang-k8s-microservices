@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 
-	"golang-k8s-microservices/invoice-service/internal/repository"
+	"github.com/dhananjayksharma/golang-k8s-microservices/invoice-service/internal/repository"
 )
 
 type InvoiceService struct {

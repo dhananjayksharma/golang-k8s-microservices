@@ -8,10 +8,10 @@ import (
 	"strconv"
 	"strings"
 
-	"golang-k8s-microservices/invoice-service/internal/logger"
-	"golang-k8s-microservices/invoice-service/internal/models"
+	"github.com/dhananjayksharma/golang-k8s-microservices/invoice-service/internal/logger"
+	"github.com/dhananjayksharma/golang-k8s-microservices/invoice-service/internal/models"
 
-	"golang-k8s-microservices/invoice-service/internal/utils/pdf"
+	"github.com/dhananjayksharma/golang-k8s-microservices/invoice-service/internal/utils/pdf"
 
 	"path/filepath"
 

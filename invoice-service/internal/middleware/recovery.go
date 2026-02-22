@@ -4,7 +4,7 @@ package middleware
 import (
 	"net/http"
 
-	"golang-k8s-microservices/invoice-service/internal/logger"
+	"github.com/dhananjayksharma/golang-k8s-microservices/invoice-service/internal/logger"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
