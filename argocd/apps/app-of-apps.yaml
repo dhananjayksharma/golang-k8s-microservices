@@ -1,17 +1,19 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: payment-service
+  name: microservices
   namespace: argocd
 spec:
-  project: microservices
+  project: default
   source:
-    repoURL: https://github.com/REPLACE_ME/golang-k8s-microservices.git
+    repoURL: https://github.com/dhananjayksharma/golang-k8s-microservices.git
     targetRevision: main
-    path: payment-service-deployment/section-hpa-k8s
+    path: argocd
+    directory:
+      recurse: true
   destination:
     server: https://kubernetes.default.svc
-    namespace: default
+    namespace: argocd
   syncPolicy:
     automated:
       prune: true
