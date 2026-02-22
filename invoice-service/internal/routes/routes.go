@@ -3,7 +3,7 @@ package routes
 import (
 	"net/http"
 
-	"golang-k8s-microservices/invoice-service/internal/handlers"
+	"github.com/dhananjayksharma/golang-k8s-microservices/invoice-service/internal/handlers"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"

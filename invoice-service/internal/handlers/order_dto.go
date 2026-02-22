@@ -1,6 +1,6 @@
 package handlers
 
-import "golang-k8s-microservices/invoice-service/internal/models"
+import "github.com/dhananjayksharma/golang-k8s-microservices/invoice-service/internal/models"
 
 type CreateInvoiceRequest struct {
 	CustomerID    uint64          `json:"customer_id" binding:"required"`

@@ -5,11 +5,11 @@ import (
 	"errors"
 	"testing"
 
-	"golang-k8s-microservices/invoice-service/internal/repository"
+	"github.com/dhananjayksharma/golang-k8s-microservices/invoice-service/internal/repository"
 )
 
 type fakeInvoiceRepo struct {
-	getInvoicesFn    func(ctx context.Context) ([]repository.Invoice, error)
+	getInvoicesFn     func(ctx context.Context) ([]repository.Invoice, error)
 	getInvoicesByIDFn func(ctx context.Context, id string) (*repository.Invoice, error)
 }
 

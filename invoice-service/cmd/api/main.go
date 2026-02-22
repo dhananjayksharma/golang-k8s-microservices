@@ -4,10 +4,10 @@ import (
 	"log"
 	"os"
 
-	"golang-k8s-microservices/invoice-service/internal/db"
-	"golang-k8s-microservices/invoice-service/internal/logger"
-	"golang-k8s-microservices/invoice-service/internal/middleware"
-	"golang-k8s-microservices/invoice-service/internal/routes"
+	"github.com/dhananjayksharma/golang-k8s-microservices/invoice-service/internal/db"
+	"github.com/dhananjayksharma/golang-k8s-microservices/invoice-service/internal/logger"
+	"github.com/dhananjayksharma/golang-k8s-microservices/invoice-service/internal/middleware"
+	"github.com/dhananjayksharma/golang-k8s-microservices/invoice-service/internal/routes"
 
 	"github.com/gin-gonic/gin"
 )
