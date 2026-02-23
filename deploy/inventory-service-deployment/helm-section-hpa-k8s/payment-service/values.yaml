@@ -1,0 +1,28 @@
+replicaCount: 1
+appname:
+    name: inventory-service
+    appns: inventory-service-namespace
+image:
+  repository: docker.io/dhananjayksharma/inventory-service
+  tag: "latest"
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  port: 8914
+
+resources:
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+secrets:
+  # If set, use this existing Secret from the namespace and do not create a new one.
+  # The Secret must contain keys: MYSQL_USER and MYSQL_PASSWORD.
+  existingSecretName: "inventory-service-secret"
+  mysqlUser: ""
+  mysqlPassword: ""
+
+mysql:
+  caSecretName: mysql-ca-cert
+  caMountPath: /etc/mysql/certs

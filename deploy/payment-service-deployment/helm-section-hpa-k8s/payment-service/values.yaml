@@ -1,7 +1,7 @@
 replicaCount: 1
 appname:
     name: payment-service
-    paymentservicens: payment-service-namespace
+    appns: payment-service-namespace
 image:
   repository: docker.io/dhananjayksharma/payment-service
   tag: "latest"

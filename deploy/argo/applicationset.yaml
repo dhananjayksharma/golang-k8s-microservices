@@ -1,0 +1,53 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: golang-micros
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - name: payment-service
+            path: deploy/base/payment-service
+            namespace: payment-service-namespace
+          # - name: order-service
+          #   path: deploy/base/order-service
+          #   namespace: order-service-ns
+          - name: inventory-service
+            path: deploy/base/inventory-service
+            namespace: inventory-service-namespace
+          # - name: invoice-service
+          #   path: deploy/base/invoice-service
+          #   namespace: invoice-service-ns
+          # - name: message-service
+          #   path: deploy/base/message-service
+          #   namespace: message-service-ns
+          # - name: shipping-service
+          #   path: deploy/base/shipping-service
+          #   namespace: shipping-service-ns
+
+  template:
+    metadata:
+      name: "{{name}}"
+      labels:
+        app.kubernetes.io/part-of: golang-k8s-microservices
+    spec:
+      project: golang-micros
+
+      source:
+        repoURL: "https://github.com/dhananjayksharma/golang-k8s-microservices.git"
+        targetRevision: main
+        path: "{{path}}"
+
+      destination:
+        server: "https://kubernetes.default.svc"
+        namespace: "{{namespace}}"
+
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ApplyOutOfSyncOnly=true
+          - PruneLast=true
