@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
-  name: microservices
+  name: golang-micros
   namespace: argocd
 spec:
   description: Project for golang-k8s-microservices applications
@@ -11,6 +11,8 @@ spec:
     - namespace: argocd
       server: https://kubernetes.default.svc
     - namespace: payment-service-namespace
+      server: https://kubernetes.default.svc
+    - namespace: inventory-service-namespace
       server: https://kubernetes.default.svc
   clusterResourceWhitelist:
     - group: '*'
