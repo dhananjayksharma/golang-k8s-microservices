@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ .Values.appname.name }}-config
-  namespace: {{ .Values.appname.paymentservicens }}
+  namespace: {{ .Values.appname.appns }}
 data:
   MYSQL_HOST: mysql-2e9fea2e-dkgosql.a.aivencloud.com
   MYSQL_PORT: "10473"

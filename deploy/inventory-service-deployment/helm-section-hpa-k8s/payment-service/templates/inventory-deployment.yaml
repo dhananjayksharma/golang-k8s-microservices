@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ .Values.appname.name }}-deployment
-  namespace: {{ .Values.appname.paymentservicens }}
+  namespace: {{ .Values.appname.appns }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
