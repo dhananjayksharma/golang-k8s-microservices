@@ -1,0 +1,17 @@
+apiVersion: configuration.konghq.com/v1
+kind: KongClusterPlugin
+metadata:
+  name: rl-100rpm
+plugin: rate-limiting
+config:
+  minute: 100
+  policy: local
+apiVersion: configuration.konghq.com/v1
+kind: KongClusterPlugin
+metadata:
+  name: key-auth
+plugin: key-auth
+config:
+  key_names:
+    - apikey
+  hide_credentials: true
