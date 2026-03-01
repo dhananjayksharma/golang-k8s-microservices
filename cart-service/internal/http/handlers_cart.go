@@ -233,8 +233,124 @@ func (h *Handlers) CreateOrGetActiveCart(c *gin.Context) {
 }
 
 func (h *Handlers) GetCart(c *gin.Context) {
-	// TODO: load cart + items + totals + promos
-	c.JSON(http.StatusOK, gin.H{"todo": "GetCart"})
+	cartID, ok := parseBin16FromParam(c, "cartId")
+	if !ok {
+		return
+	}
+
+	var cart domain.Cart
+	if err := h.db.Where("cart_id = ?", cartID).First(&cart).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "cart not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var items []domain.CartItem
+	if err := h.db.Where("cart_id = ?", cartID).Order("added_at asc").Find(&items).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var promos []domain.CartPromotion
+	if err := h.db.Where("cart_id = ?", cartID).Order("applied_at asc").Find(&promos).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	totals := domain.CartTotals{CartID: cartID}
+	if err := h.db.Where("cart_id = ?", cartID).First(&totals).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	cartUUID, err := domain.Bin16ToUUID(cart.CartID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID := ""
+	if len(cart.UserID) == 16 {
+		if u, convErr := domain.Bin16ToUUID(cart.UserID); convErr == nil {
+			userID = u.String()
+		}
+	}
+
+	itemResp := make([]gin.H, 0, len(items))
+	for _, it := range items {
+		itemID := ""
+		if len(it.CartItemID) == 16 {
+			if u, convErr := domain.Bin16ToUUID(it.CartItemID); convErr == nil {
+				itemID = u.String()
+			}
+		}
+		itemResp = append(itemResp, gin.H{
+			"cart_item_id":      itemID,
+			"sku":               it.SKU,
+			"variant_id":        it.VariantID,
+			"qty":               it.Qty,
+			"product_name":      it.ProductName,
+			"image_url":         it.ImageURL,
+			"currency":          it.Currency,
+			"unit_price_paise":  it.UnitPricePaise,
+			"mrp_paise":         it.MRPPaise,
+			"tax_rate_bps":      it.TaxRateBps,
+			"product_meta":      it.ProductMeta,
+			"availability":      it.Availability,
+			"added_at":          it.AddedAt,
+			"updated_at":        it.UpdatedAt,
+		})
+	}
+
+	promoResp := make([]gin.H, 0, len(promos))
+	for _, p := range promos {
+		promoID := ""
+		if len(p.CartPromoID) == 16 {
+			if u, convErr := domain.Bin16ToUUID(p.CartPromoID); convErr == nil {
+				promoID = u.String()
+			}
+		}
+		promoResp = append(promoResp, gin.H{
+			"cart_promo_id":   promoID,
+			"promo_code":      p.PromoCode,
+			"promo_type":      p.PromoType,
+			"discount_paise":  p.DiscountPaise,
+			"promo_meta":      p.PromoMeta,
+			"status":          p.Status,
+			"applied_at":      p.AppliedAt,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"cart": gin.H{
+			"cart_id":    cartUUID.String(),
+			"owner_type": cart.OwnerType,
+			"user_id":    userID,
+			"guest_id":   cart.GuestID,
+			"channel":    cart.Channel,
+			"status":     cart.Status,
+			"currency":   cart.Currency,
+			"locale":     cart.Locale,
+			"version":    cart.Version,
+			"created_at": cart.CreatedAt,
+			"updated_at": cart.UpdatedAt,
+			"expires_at": cart.ExpiresAt,
+		},
+		"items": itemResp,
+		"totals": gin.H{
+			"subtotal_paise":    totals.SubtotalPaise,
+			"tax_paise":         totals.TaxPaise,
+			"shipping_paise":    totals.ShippingPaise,
+			"discount_paise":    totals.DiscountPaise,
+			"grand_total_paise": totals.GrandTotalPaise,
+			"pricing_version":   totals.PricingVersion,
+			"computed_at":       totals.ComputedAt,
+		},
+		"promotions": promoResp,
+	})
 }
 
 func (h *Handlers) AddItem(c *gin.Context) {
