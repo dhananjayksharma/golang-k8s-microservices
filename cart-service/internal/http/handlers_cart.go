@@ -122,7 +122,8 @@ func (h *Handlers) CreateOrGetActiveCart(c *gin.Context) {
 				IdempotencyKey: idemKey,
 				Endpoint:       c.FullPath(),
 				RequestHash:    reqHash,
-				State:          "PROCESSING",
+				ResponseBody:   "{}",
+				State:          "IN_PROGRESS",
 				ExpiresAt:      idemExpire(24 * time.Hour),
 			}
 			if createErr := tx.Create(&newIdem).Error; createErr != nil {
@@ -176,16 +177,16 @@ func (h *Handlers) CreateOrGetActiveCart(c *gin.Context) {
 			}
 		}
 
-		if err := tx.Where("cart_id=?", cart.CartID).
-			Attrs(domain.CartTotals{
-				SubtotalPaise:   0,
-				TaxPaise:        0,
-				ShippingPaise:   0,
-				DiscountPaise:   0,
-				GrandTotalPaise: 0,
-				PricingVersion:  1,
-			}).
-			FirstOrCreate(&domain.CartTotals{}).Error; err != nil {
+		cartTotals := domain.CartTotals{
+			CartID:          cart.CartID,
+			SubtotalPaise:   0,
+			TaxPaise:        0,
+			ShippingPaise:   0,
+			DiscountPaise:   0,
+			GrandTotalPaise: 0,
+			PricingVersion:  1,
+		}
+		if err := tx.FirstOrCreate(&cartTotals, domain.CartTotals{CartID: cart.CartID}).Error; err != nil {
 			return err
 		}
 
@@ -272,8 +273,192 @@ func (h *Handlers) ApplyPromotion(c *gin.Context) {
 }
 
 func (h *Handlers) Checkout(c *gin.Context) {
-	// TODO: mark cart CHECKED_OUT + create CartCheckedOut outbox event + idempotency
-	c.JSON(http.StatusOK, gin.H{"todo": "Checkout"})
+	cartID := c.Param("cartId")
+	cartIDBin, ok := parseBin16FromParam(c, "cartId")
+	if !ok {
+		return
+	}
+	clientID := c.GetHeader("X-Client-Id")
+	idemKey := c.GetHeader("Idempotency-Key")
+
+	err := h.db.Transaction(func(tx *gorm.DB) error {
+		// 1) load cart + items + totals + promos (FOR UPDATE is ideal)
+		// 2) mark cart status = CHECKED_OUT
+		// 3) insert outbox event
+
+		ev := domain.EventEnvelope{
+			EventID:        uuid.NewString(),
+			EventType:      "CartCheckedOut.v1",
+			Producer:       "cart-service",
+			OccurredAt:     time.Now().UTC(),
+			CorrelationID:  cartID,
+			IdempotencyKey: idemKey,
+			Data: map[string]any{
+				"cart_id":   cartID,
+				"client_id": clientID,
+				// include items + totals snapshot here
+			},
+		}
+		payloadBytes, _ := json.Marshal(ev)
+
+		ob := domain.CartOutbox{
+			OutboxID:      domain.UUIDToBin16(uuid.New()),
+			AggregateType: "CART",
+			AggregateID:   cartIDBin, // BINARY(16) cart_id
+			EventType:     ev.EventType,
+			Payload:       string(payloadBytes),
+			Status:        "NEW",
+		}
+		if err := tx.Create(&ob).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(200, gin.H{"status": "CHECKED_OUT"})
+}
+
+func (h *Handlers) NOCheckout(c *gin.Context) {
+	cartID, ok := parseBin16FromParam(c, "cartId")
+	if !ok {
+		return
+	}
+
+	clientID := c.GetHeader(HClientID)
+	idemKey := c.GetHeader(HIdempotencyKey)
+	reqHash, err := domain.HashRequest(struct {
+		CartID string `json:"cart_id"`
+	}{
+		CartID: c.Param("cartId"),
+	})
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request payload"})
+		return
+	}
+
+	statusCode := http.StatusOK
+	respBody := any(gin.H{"cart_id": c.Param("cartId"), "status": "CHECKED_OUT"})
+
+	err = withTx(h.db, func(tx *gorm.DB) error {
+		var idemRow domain.CartIdempotency
+		idemErr := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("client_id=? AND idempotency_key=?", clientID, idemKey).
+			First(&idemRow).Error
+		if idemErr == nil {
+			if idemRow.RequestHash != reqHash {
+				statusCode = http.StatusConflict
+				respBody = gin.H{"error": "idempotency key reused with different request payload"}
+				return nil
+			}
+			if idemRow.State == "COMPLETED" && idemRow.ResponseBody != "" && idemRow.HTTPStatus != nil {
+				statusCode = int(*idemRow.HTTPStatus)
+				var replay any
+				if unmarshalErr := json.Unmarshal([]byte(idemRow.ResponseBody), &replay); unmarshalErr == nil {
+					respBody = replay
+				}
+				return nil
+			}
+		} else if !errors.Is(idemErr, gorm.ErrRecordNotFound) {
+			return idemErr
+		}
+
+		if errors.Is(idemErr, gorm.ErrRecordNotFound) {
+			newIdem := domain.CartIdempotency{
+				ClientID:       clientID,
+				IdempotencyKey: idemKey,
+				Endpoint:       c.FullPath(),
+				RequestHash:    reqHash,
+				ResponseBody:   "{}",
+				State:          "IN_PROGRESS",
+				ExpiresAt:      idemExpire(24 * time.Hour),
+			}
+			if createErr := tx.Create(&newIdem).Error; createErr != nil {
+				refetchErr := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+					Where("client_id=? AND idempotency_key=?", clientID, idemKey).
+					First(&idemRow).Error
+				if refetchErr != nil {
+					return createErr
+				}
+				if idemRow.RequestHash != reqHash {
+					statusCode = http.StatusConflict
+					respBody = gin.H{"error": "idempotency key reused with different request payload"}
+					return nil
+				}
+				if idemRow.State == "COMPLETED" && idemRow.ResponseBody != "" && idemRow.HTTPStatus != nil {
+					statusCode = int(*idemRow.HTTPStatus)
+					var replay any
+					if unmarshalErr := json.Unmarshal([]byte(idemRow.ResponseBody), &replay); unmarshalErr == nil {
+						respBody = replay
+					}
+					return nil
+				}
+			}
+		}
+
+		var cart domain.Cart
+		cartErr := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("cart_id = ?", cartID).
+			First(&cart).Error
+		if errors.Is(cartErr, gorm.ErrRecordNotFound) {
+			statusCode = http.StatusNotFound
+			respBody = gin.H{"error": "cart not found"}
+		} else if cartErr != nil {
+			return cartErr
+		} else {
+			switch cart.Status {
+			case "ACTIVE":
+				updateErr := tx.Model(&domain.Cart{}).
+					Where("cart_id=? AND version=?", cartID, cart.Version).
+					Updates(map[string]any{
+						"status":  "CHECKED_OUT",
+						"version": cart.Version + 1,
+					}).Error
+				if updateErr != nil {
+					return updateErr
+				}
+
+				outbox := domain.CartOutbox{
+					OutboxID:      domain.UUIDToBin16(uuid.New()),
+					AggregateType: "Cart",
+					AggregateID:   cartID,
+					EventType:     "CartCheckedOut",
+					Payload: mustJSON(gin.H{
+						"cart_id":        c.Param("cartId"),
+						"status":         "CHECKED_OUT",
+						"checked_out_at": time.Now().UTC().Format(time.RFC3339Nano),
+					}),
+					Status: "NEW",
+				}
+				if createErr := tx.Create(&outbox).Error; createErr != nil {
+					return createErr
+				}
+			case "CHECKED_OUT":
+				// Idempotent success for already checked out cart: no duplicate outbox event.
+			default:
+				statusCode = http.StatusConflict
+				respBody = gin.H{"error": "cart is not in ACTIVE state"}
+			}
+		}
+
+		return tx.Model(&domain.CartIdempotency{}).
+			Where("client_id=? AND idempotency_key=?", clientID, idemKey).
+			Updates(map[string]any{
+				"resource_id":   cartID,
+				"state":         "COMPLETED",
+				"http_status":   int16(statusCode),
+				"response_body": mustJSON(respBody),
+			}).Error
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(statusCode, respBody)
 }
 
 // ---- helpers ----

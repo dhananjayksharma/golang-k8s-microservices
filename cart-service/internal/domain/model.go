@@ -47,26 +47,26 @@ type CartItem struct {
 func (CartItem) TableName() string { return "cart_items" }
 
 type CartPromotion struct {
-	CartPromoID   []byte `gorm:"column:cart_promo_id;type:binary(16);primaryKey"`
-	CartID        []byte `gorm:"column:cart_id;type:binary(16);index;not null"`
-	PromoCode     string `gorm:"column:promo_code;not null"`
-	PromoType     string `gorm:"column:promo_type;not null"`
-	DiscountPaise int64  `gorm:"column:discount_paise;not null"`
-	PromoMeta     string `gorm:"column:promo_meta;type:json"`
-	Status        string `gorm:"column:status;not null"`
+	CartPromoID   []byte    `gorm:"column:cart_promo_id;type:binary(16);primaryKey"`
+	CartID        []byte    `gorm:"column:cart_id;type:binary(16);index;not null"`
+	PromoCode     string    `gorm:"column:promo_code;not null"`
+	PromoType     string    `gorm:"column:promo_type;not null"`
+	DiscountPaise int64     `gorm:"column:discount_paise;not null"`
+	PromoMeta     string    `gorm:"column:promo_meta;type:json"`
+	Status        string    `gorm:"column:status;not null"`
 	AppliedAt     time.Time `gorm:"column:applied_at;autoCreateTime"`
 }
 
 func (CartPromotion) TableName() string { return "cart_promotions" }
 
 type CartTotals struct {
-	CartID          []byte `gorm:"column:cart_id;type:binary(16);primaryKey"`
-	SubtotalPaise   int64  `gorm:"column:subtotal_paise;not null"`
-	TaxPaise        int64  `gorm:"column:tax_paise;not null"`
-	ShippingPaise   int64  `gorm:"column:shipping_paise;not null"`
-	DiscountPaise   int64  `gorm:"column:discount_paise;not null"`
-	GrandTotalPaise int64  `gorm:"column:grand_total_paise;not null"`
-	PricingVersion  int    `gorm:"column:pricing_version;not null"`
+	CartID          []byte    `gorm:"column:cart_id;type:binary(16);primaryKey"`
+	SubtotalPaise   int64     `gorm:"column:subtotal_paise;not null"`
+	TaxPaise        int64     `gorm:"column:tax_paise;not null"`
+	ShippingPaise   int64     `gorm:"column:shipping_paise;not null"`
+	DiscountPaise   int64     `gorm:"column:discount_paise;not null"`
+	GrandTotalPaise int64     `gorm:"column:grand_total_paise;not null"`
+	PricingVersion  int       `gorm:"column:pricing_version;not null"`
 	ComputedAt      time.Time `gorm:"column:computed_at;autoCreateTime"`
 }
 
@@ -105,11 +105,22 @@ type CartOutbox struct {
 func (CartOutbox) TableName() string { return "cart_outbox" }
 
 type ProcessedEvent struct {
-	EventID        []byte `gorm:"column:event_id;type:binary(16);primaryKey"`
-	Consumer       string `gorm:"column:consumer;not null"`
-	EventType      string `gorm:"column:event_type;not null"`
-	CorrelationID  []byte `gorm:"column:correlation_id;type:binary(16)"`
-	ProcessedAt    time.Time `gorm:"column:processed_at;autoCreateTime"`
+	EventID       []byte    `gorm:"column:event_id;type:binary(16);primaryKey"`
+	Consumer      string    `gorm:"column:consumer;not null"`
+	EventType     string    `gorm:"column:event_type;not null"`
+	CorrelationID []byte    `gorm:"column:correlation_id;type:binary(16)"`
+	ProcessedAt   time.Time `gorm:"column:processed_at;autoCreateTime"`
 }
 
 func (ProcessedEvent) TableName() string { return "processed_events" }
+
+type EventEnvelope struct {
+	EventID        string    `json:"event_id"`
+	EventType      string    `json:"event_type"`
+	Producer       string    `json:"producer"`
+	OccurredAt     time.Time `json:"occurred_at"`
+	CorrelationID  string    `json:"correlation_id"` // cart_id or order_id
+	TraceID        string    `json:"trace_id,omitempty"`
+	IdempotencyKey string    `json:"idempotency_key,omitempty"`
+	Data           any       `json:"data"`
+}
