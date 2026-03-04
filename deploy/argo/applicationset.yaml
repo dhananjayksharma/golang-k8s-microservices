@@ -13,9 +13,9 @@ spec:
           # - name: order-service
           #   path: deploy/base/order-service
           #   namespace: order-service-ns
-          - name: inventory-service
-            path: deploy/inventory-service-deployment
-            namespace: inventory-service-namespace
+          # - name: inventory-service
+          #   path: deploy/inventory-service-deployment
+          #   namespace: inventory-service-namespace
           # - name: invoice-service
           #   path: deploy/base/invoice-service
           #   namespace: invoice-service-ns
