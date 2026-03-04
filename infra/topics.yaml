@@ -1,0 +1,33 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: order.events
+  namespace: kafka
+  labels:
+    strimzi.io/cluster: techie-service-cluster
+spec:
+  partitions: 12
+  replicas: 3
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: payment.events
+  namespace: kafka
+  labels:
+    strimzi.io/cluster: techie-service-cluster
+spec:
+  partitions: 12
+  replicas: 3
+
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: cart.events
+  namespace: kafka
+  labels:
+    strimzi.io/cluster: techie-service-cluster
+spec:
+  partitions: 12
+  replicas: 3

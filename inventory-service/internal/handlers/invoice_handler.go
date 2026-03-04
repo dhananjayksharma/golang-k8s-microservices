@@ -11,8 +11,8 @@ import (
 	"golang-k8s-microservices/inventory-service/internal/logger"
 	"golang-k8s-microservices/inventory-service/internal/models"
 
+	ivhttp "golang-k8s-microservices/inventory-service/internal/utils/http"
 	"golang-k8s-microservices/inventory-service/internal/utils/pdf"
-
 	"path/filepath"
 
 	"github.com/gin-gonic/gin"
@@ -76,6 +76,32 @@ func (h *InvoiceHandler) GetByID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, o)
+}
+
+// GET /orders/:id
+func (h *InvoiceHandler) GetInventoryByID(c *gin.Context) {
+	id, err := parseUint64Param(c, "id")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+
+	logger.Log.Info("inventory",
+		zap.Uint64("id", id),
+	)
+	//url := "https://formatjsononline.com/api/users"
+	// OR internal
+	url := fmt.Sprintf("http://localhost:8114/v1/invoices/%d", id)
+
+	data, err := ivhttp.GetJSON(url)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", data)
 }
 
 func (h *InvoiceHandler) getOrderByID(id uint64) (models.Order, error) {

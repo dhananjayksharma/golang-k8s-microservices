@@ -22,6 +22,7 @@ func Register(r *gin.Engine, gdb *gorm.DB) {
 		v1.PATCH("/invoices/:id", h.Update)
 		v1.DELETE("/invoices/:id", h.Delete)
 		v1.GET("/invoices/:id/:actions", h.InvoiceActions)
+		v1.GET("/invoices/inventory/:id", h.GetInventoryByID)
 
 	}
 	v2 := r.Group("/v2")

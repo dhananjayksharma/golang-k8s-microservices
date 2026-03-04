@@ -8,13 +8,13 @@ spec:
     - list:
         elements:
           - name: payment-service
-            path: deploy/base/payment-service
+            path: deploy/payment-service-deployment
             namespace: payment-service-namespace
           # - name: order-service
           #   path: deploy/base/order-service
           #   namespace: order-service-ns
           - name: inventory-service
-            path: deploy/base/inventory-service
+            path: deploy/inventory-service-deployment
             namespace: inventory-service-namespace
           # - name: invoice-service
           #   path: deploy/base/invoice-service
