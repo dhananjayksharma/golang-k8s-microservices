@@ -9,7 +9,6 @@ spec:
         elements:
           - name: payment-service
             path: deploy/payment-service-deployment
-            path: deploy/payment-service-deployment
             namespace: payment-service-namespace
           # - name: order-service
           #   path: deploy/base/order-service
