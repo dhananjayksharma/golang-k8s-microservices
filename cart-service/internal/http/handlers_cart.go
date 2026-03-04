@@ -288,20 +288,20 @@ func (h *Handlers) GetCart(c *gin.Context) {
 			}
 		}
 		itemResp = append(itemResp, gin.H{
-			"cart_item_id":      itemID,
-			"sku":               it.SKU,
-			"variant_id":        it.VariantID,
-			"qty":               it.Qty,
-			"product_name":      it.ProductName,
-			"image_url":         it.ImageURL,
-			"currency":          it.Currency,
-			"unit_price_paise":  it.UnitPricePaise,
-			"mrp_paise":         it.MRPPaise,
-			"tax_rate_bps":      it.TaxRateBps,
-			"product_meta":      it.ProductMeta,
-			"availability":      it.Availability,
-			"added_at":          it.AddedAt,
-			"updated_at":        it.UpdatedAt,
+			"cart_item_id":     itemID,
+			"sku":              it.SKU,
+			"variant_id":       it.VariantID,
+			"qty":              it.Qty,
+			"product_name":     it.ProductName,
+			"image_url":        it.ImageURL,
+			"currency":         it.Currency,
+			"unit_price_paise": it.UnitPricePaise,
+			"mrp_paise":        it.MRPPaise,
+			"tax_rate_bps":     it.TaxRateBps,
+			"product_meta":     it.ProductMeta,
+			"availability":     it.Availability,
+			"added_at":         it.AddedAt,
+			"updated_at":       it.UpdatedAt,
 		})
 	}
 
@@ -314,13 +314,13 @@ func (h *Handlers) GetCart(c *gin.Context) {
 			}
 		}
 		promoResp = append(promoResp, gin.H{
-			"cart_promo_id":   promoID,
-			"promo_code":      p.PromoCode,
-			"promo_type":      p.PromoType,
-			"discount_paise":  p.DiscountPaise,
-			"promo_meta":      p.PromoMeta,
-			"status":          p.Status,
-			"applied_at":      p.AppliedAt,
+			"cart_promo_id":  promoID,
+			"promo_code":     p.PromoCode,
+			"promo_type":     p.PromoType,
+			"discount_paise": p.DiscountPaise,
+			"promo_meta":     p.PromoMeta,
+			"status":         p.Status,
+			"applied_at":     p.AppliedAt,
 		})
 	}
 
