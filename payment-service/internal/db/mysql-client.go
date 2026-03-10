@@ -13,7 +13,7 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-func ConnectMySQL(dsn string, capempath string) (*gorm.DB, error) {
+func ConnectMySQLTLS(dsn string, capempath string) (*gorm.DB, error) {
 	// log.Printf("ConnectMySQL capempath:%s", capempath)
 	caCert, err := os.ReadFile(capempath)
 	if err != nil {
@@ -49,7 +49,7 @@ func ConnectMySQL(dsn string, capempath string) (*gorm.DB, error) {
 	return db, nil
 }
 
-func ConnectMySQLLocal(dsn string) (*gorm.DB, error) {
+func ConnectMySQLNoTLS(dsn string) (*gorm.DB, error) {
 	cfg := &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Warn),
 	}

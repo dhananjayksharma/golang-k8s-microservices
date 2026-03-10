@@ -19,19 +19,19 @@ func main() {
 	}
 	isLocal, _ := strconv.ParseBool(os.Getenv("LOCAL_DB"))
 	var gdb *gorm.DB
+	var err error
+	// var err error
 	if isLocal {
-		gdb, err := db.ConnectMySQLLocal(dsn)
-
+		gdb, err = db.ConnectMySQLNoTLS(dsn)
 		if err != nil {
 			log.Fatalf("db connect error: %v", err)
 		}
-	}
-	capempath := os.Getenv("MYSQL_DBPEM")
-
-	if capempath == "" || len(capempath) == 0 {
-		log.Fatalf("capempath string not found error: %v", capempath)
-		gdb, err := db.ConnectMySQL(dsn, capempath)
-
+	} else {
+		capempath := os.Getenv("MYSQL_DBPEM")
+		if capempath == "" || len(capempath) == 0 {
+			log.Fatalf("capempath string not found error: %v", capempath)
+		}
+		gdb, err = db.ConnectMySQLTLS(dsn, capempath)
 		if err != nil {
 			log.Fatalf("db connect error: %v", err)
 		}
