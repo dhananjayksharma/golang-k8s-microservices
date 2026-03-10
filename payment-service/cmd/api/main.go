@@ -3,9 +3,11 @@ package main
 import (
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/dhananjayksharma/golang-k8s-microservices/payment-service/internal/db"
 	"github.com/dhananjayksharma/golang-k8s-microservices/payment-service/internal/routes"
+	"gorm.io/gorm"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,14 +17,24 @@ func main() {
 	if dsn == "" || len(dsn) == 0 {
 		log.Fatalf("dsn string not found error: %v", dsn)
 	}
+	isLocal, _ := strconv.ParseBool(os.Getenv("LOCAL_DB"))
+	var gdb *gorm.DB
+	if isLocal {
+		gdb, err := db.ConnectMySQLLocal(dsn)
 
+		if err != nil {
+			log.Fatalf("db connect error: %v", err)
+		}
+	}
 	capempath := os.Getenv("MYSQL_DBPEM")
+
 	if capempath == "" || len(capempath) == 0 {
 		log.Fatalf("capempath string not found error: %v", capempath)
-	}
-	gdb, err := db.ConnectMySQL(dsn, capempath)
-	if err != nil {
-		log.Fatalf("db connect error: %v", err)
+		gdb, err := db.ConnectMySQL(dsn, capempath)
+
+		if err != nil {
+			log.Fatalf("db connect error: %v", err)
+		}
 	}
 
 	r := gin.Default()
