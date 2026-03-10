@@ -1,24 +1,40 @@
-package handlers
+package service
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/dhananjayksharma/golang-k8s-microservices/payment-service/internal/models"
-	"github.com/dhananjayksharma/golang-k8s-microservices/payment-service/internal/service"
-
+	"github.com/dhananjayksharma/golang-k8s-microservices/payment-service/internal/repository"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
-type OrderHandler struct {
-	service *service.OrderService
+type OrderService struct {
+	repo repository.PaymentRepository
 }
 
-func NewOrderHandler(service *service.OrderService) *OrderHandler {
-	return &OrderHandler{service: &service.OrderService}
+func NewOrderService(repo repository.PaymentRepository) *OrderService {
+	return &OrderService{repo: repo}
+}
+
+func (s *OrderService) ListPayments(ctx context.Context) ([]repository.Payment, error) {
+	return s.repo.GetPayments(ctx)
+}
+
+func (s *OrderService) GetPayment(ctx context.Context, id string) (*repository.Payment, error) {
+	return s.repo.GetPaymentByID(ctx, id)
+}
+
+type OrderHandler struct {
+	DB *gorm.DB
+}
+
+func NewOrderHandler(db *gorm.DB) *OrderHandler {
+	return &OrderHandler{DB: db}
 }
 
 // POST /orders
