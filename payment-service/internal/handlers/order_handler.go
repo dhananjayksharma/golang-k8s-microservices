@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/dhananjayksharma/golang-k8s-microservices/payment-service/internal/models"
-
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -167,7 +166,6 @@ func (h *OrderHandler) Update(c *gin.Context) {
 		return
 	}
 
-	// return updated row
 	var o models.Order
 	if err := h.DB.First(&o, "order_id = ?", id).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -197,7 +195,6 @@ func (h *OrderHandler) Delete(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// helpers
 func parseUint64Param(c *gin.Context, name string) (uint64, error) {
 	return strconv.ParseUint(strings.TrimSpace(c.Param(name)), 10, 64)
 }

@@ -5,13 +5,15 @@ import (
 	"crypto/x509"
 	"fmt"
 	"os"
+	"time"
 
 	mysqlDriver "github.com/go-sql-driver/mysql"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
-func ConnectMySQL(dsn string, capempath string) (*gorm.DB, error) {
+func ConnectMySQLTLS(dsn string, capempath string) (*gorm.DB, error) {
 	// log.Printf("ConnectMySQL capempath:%s", capempath)
 	caCert, err := os.ReadFile(capempath)
 	if err != nil {
@@ -45,4 +47,26 @@ func ConnectMySQL(dsn string, capempath string) (*gorm.DB, error) {
 
 	fmt.Println("✅ connected with CA TLS")
 	return db, nil
+}
+
+func ConnectMySQLNoTLS(dsn string) (*gorm.DB, error) {
+	cfg := &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Warn),
+	}
+
+	gdb, err := gorm.Open(mysql.Open(dsn), cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	sqlDB, err := gdb.DB()
+	if err != nil {
+		return nil, err
+	}
+
+	sqlDB.SetMaxOpenConns(10)
+	sqlDB.SetMaxIdleConns(5)
+	sqlDB.SetConnMaxLifetime(2 * time.Minute)
+
+	return gdb, nil
 }
