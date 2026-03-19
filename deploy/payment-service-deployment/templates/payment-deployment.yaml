@@ -21,7 +21,7 @@ spec:
         # 🔹 Main application container
         - name: {{ .Values.appname.name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: {{ .Values.image.IfNotPresent }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           volumeMounts:
             - name: mysql-ca-volume
               mountPath: {{ .Values.mysql.caMountPath }}

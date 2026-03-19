@@ -5,7 +5,7 @@ appname:
 image:
   # repository: docker.io/dhananjayksharma/payment-service
   # tag: "latest"
-  repository: payment-service
+  repository: "payment-service"
   tag: "dev"
   pullPolicy: IfNotPresent
 
