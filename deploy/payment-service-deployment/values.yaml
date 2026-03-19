@@ -3,9 +3,7 @@ appname:
     name: payment-service
     appns: payment-service-namespace
 image:
-  # repository: docker.io/dhananjayksharma/payment-service
-  # tag: "latest"
-  repository: "payment-service"
+  repository: "docker.io/library/payment-service"
   tag: "dev"
   pullPolicy: IfNotPresent
 
