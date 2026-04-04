@@ -7,9 +7,18 @@ spec:
   generators:
     - list:
         elements:
-          - name: payment-service
+          - name: payment-service-dev
             path: deploy/payment-service-deployment
-            namespace: payment-service-namespace
+            namespace: payment-service-dev
+            valuesFile: values-dev.yaml
+          - name: payment-service-preprod
+            path: deploy/payment-service-deployment
+            namespace: payment-service-preprod
+            valuesFile: values-preprod.yaml
+          - name: payment-service-prod
+            path: deploy/payment-service-deployment
+            namespace: payment-service-prod
+            valuesFile: values-prod.yaml
           # - name: order-service
           #   path: deploy/base/order-service
           #   namespace: order-service-ns
@@ -38,6 +47,10 @@ spec:
         repoURL: "https://github.com/dhananjayksharma/golang-k8s-microservices.git" 
         targetRevision: main
         path: "{{path}}"
+        helm:
+          valueFiles:
+            - values.yaml
+            - "{{valuesFile}}"
 
       destination:
         server: "https://kubernetes.default.svc"

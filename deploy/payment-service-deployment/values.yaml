@@ -1,28 +1,59 @@
-replicaCount: 1
+environment: dev
+
 appname:
-    name: payment-service
-    appns: payment-service-namespace
+  name: payment-service
+  appns: payment-service-namespace
+
+replicaCount: 1
+
 image:
-  repository: "docker.io/library/payment-service"
-  tag: "dev"
+  repository: docker.io/library/payment-service
+  tag: dev
   pullPolicy: IfNotPresent
 
 service:
   type: ClusterIP
   port: 8112
+  targetPort: 8112
+  nodePort: null
 
 resources:
+  requests:
+    cpu: 250m
+    memory: 256Mi
   limits:
-    cpu: "500m"
-    memory: "512Mi"
+    cpu: 500m
+    memory: 512Mi
+
+config:
+  localDb: "false"
+  mysqlHost: mysql-2e9fea2e-dkgosql.a.aivencloud.com
+  mysqlPort: "10473"
+  mysqlDb: defaultdb
+  mysqlParams: parseTime=true
 
 secrets:
   # If set, use this existing Secret from the namespace and do not create a new one.
   # The Secret must contain keys: MYSQL_USER and MYSQL_PASSWORD.
-  existingSecretName: "payment-service-secret"
+  existingSecretName: payment-service-secret
   mysqlUser: ""
   mysqlPassword: ""
 
 mysql:
   caSecretName: mysql-ca-cert
   caMountPath: /etc/mysql/certs
+
+ingress:
+  enabled: false
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  host: payment.local
+  path: /
+  pathType: Prefix
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 50

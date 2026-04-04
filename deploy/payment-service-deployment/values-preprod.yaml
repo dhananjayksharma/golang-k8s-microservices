@@ -1,0 +1,26 @@
+environment: preprod
+
+appname:
+  appns: payment-service-preprod
+
+image:
+  tag: preprod
+
+replicaCount: 2
+
+config:
+  localDb: "false"
+  mysqlHost: mysql-preprod.example.internal
+  mysqlPort: "3306"
+  mysqlDb: payment_preprod
+
+secrets:
+  existingSecretName: payment-service-preprod-secret
+
+ingress:
+  enabled: true
+  host: payment-preprod.example.internal
+
+autoscaling:
+  minReplicas: 2
+  maxReplicas: 5

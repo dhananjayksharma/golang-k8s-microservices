@@ -15,10 +15,10 @@ spec:
         app.kubernetes.io/name: {{ .Values.appname.name }}
         app.kubernetes.io/component: {{ .Values.appname.name }}
         app.kubernetes.io/instance: {{ .Values.appname.name }}
+        app.kubernetes.io/environment: {{ .Values.environment }}
 
     spec:
       containers:
-        # 🔹 Main application container
         - name: {{ .Values.appname.name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
@@ -28,13 +28,19 @@ spec:
               readOnly: true
           resources:
             requests:
-              memory: {{ .Values.resources.limits.memory }}
-              cpu: {{ .Values.resources.limits.cpu }}
+              memory: {{ .Values.resources.requests.memory }}
+              cpu: {{ .Values.resources.requests.cpu }}
             limits:
+              cpu: {{ .Values.resources.limits.cpu }}
               memory: {{ .Values.resources.limits.memory }}
           ports:
-            - containerPort: {{ .Values.service.port }}
+            - containerPort: {{ .Values.service.targetPort }}
           env:
+            - name: LOCAL_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.appname.name }}-config
+                  key: LOCAL_DB
             - name: MYSQL_HOST
               valueFrom:
                 configMapKeyRef:
@@ -72,17 +78,16 @@ spec:
           readinessProbe:
             httpGet:
               path: /healthz
-              port: {{ .Values.service.port }}
+              port: {{ .Values.service.targetPort }}
             initialDelaySeconds: 15
             periodSeconds: 5
           livenessProbe:
             httpGet:
               path: /healthz
-              port: {{ .Values.service.port }}
+              port: {{ .Values.service.targetPort }}
             initialDelaySeconds: 15
             periodSeconds: 10
       volumes:
         - name: mysql-ca-volume
           secret:
             secretName: {{ .Values.mysql.caSecretName }}
-

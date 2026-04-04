@@ -3,11 +3,13 @@ package main
 import (
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/dhananjayksharma/golang-k8s-microservices/invoice-service/internal/db"
-	"github.com/dhananjayksharma/golang-k8s-microservices/invoice-service/internal/logger"
 	"github.com/dhananjayksharma/golang-k8s-microservices/invoice-service/internal/middleware"
 	"github.com/dhananjayksharma/golang-k8s-microservices/invoice-service/internal/routes"
+	"golang.org/x/time/rate"
+	"gorm.io/gorm"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,27 +17,38 @@ import (
 func main() {
 	dsn := os.Getenv("MYSQL_DSN")
 	if dsn == "" || len(dsn) == 0 {
-		dsn = "root:root@tcp(localhost:3306)/appdb?parseTime=true"
 		log.Fatalf("dsn string not found error: %v", dsn)
 	}
+	isLocal, _ := strconv.ParseBool(os.Getenv("LOCAL_DB"))
+	var gdb *gorm.DB
+	var err error
 
-	gdb, err := db.NewGormMySQL(dsn)
-	if err != nil {
-		log.Fatalf("db connect error: %v", err)
+	// var err error
+	if isLocal {
+		gdb, err = db.ConnectMySQLNoTLS(dsn)
+		if err != nil {
+			log.Fatalf("db connect error: %v", err)
+		}
+	} else {
+		capempath := os.Getenv("MYSQL_DBPEM")
+		if capempath == "" || len(capempath) == 0 {
+			log.Fatalf("capempath string not found error: %v", capempath)
+		}
+		gdb, err = db.ConnectMySQLTLS(dsn, capempath)
+		if err != nil {
+			log.Fatalf("db connect error: %v", err)
+		}
+	}
+	gin.SetMode(gin.DebugMode)
+	r := gin.Default()
+	var activeRateLimiter = "v2"
+	if activeRateLimiter == "v2" {
+		r.Use(middleware.RateLimiterMiddleware())
+	} else {
+		rl := middleware.NewIPRateLimiter(rate.Limit(5), 10)
+		r.Use(rl.Middleware())
 	}
 
-	logger.Init("dev")
-	defer logger.Log.Sync()
-
-	r := gin.New()
-
-	r.Use(
-		middleware.RequestID(),
-		middleware.Logger(),
-		middleware.Recovery(),
-	)
-
-	//r := gin.Default()
 	routes.Register(r, gdb)
 
 	log.Println("listening on :8114")

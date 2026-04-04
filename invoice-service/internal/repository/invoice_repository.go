@@ -3,14 +3,15 @@ package repository
 import "context"
 
 type Invoice struct {
-	ID     string  `json:"id"`
-	Amount float64 `json:"amount"`
-	Status string  `json:"status"`
+	ID            string  `json:"id"`
+	OrderId       int64   `json:"order_id"`
+	InvoiceNumber string  `json:"invoice_number"`
+	TotalAmount   float64 `json:"total_amount"`
+	Status        string  `json:"status"`
 }
 
-// PaymentRepository defines data access behavior.
-// Currently implemented using in-memory dummy data.
+// InvoiceRepository defines data access behavior.
 type InvoiceRepository interface {
 	GetInvoices(ctx context.Context) ([]Invoice, error)
-	GetInvoicesByID(ctx context.Context, id string) (*Invoice, error)
+	GetOrderByID(ctx context.Context, id string) (*Invoice, error)
 }

@@ -1,0 +1,27 @@
+environment: prod
+
+appname:
+  appns: payment-service-prod
+
+image:
+  tag: prod
+  pullPolicy: IfNotPresent
+
+replicaCount: 3
+
+config:
+  localDb: "false"
+  mysqlHost: mysql-prod.example.internal
+  mysqlPort: "3306"
+  mysqlDb: payment_prod
+
+secrets:
+  existingSecretName: payment-service-prod-secret
+
+ingress:
+  enabled: true
+  host: payment.example.com
+
+autoscaling:
+  minReplicas: 3
+  maxReplicas: 10
