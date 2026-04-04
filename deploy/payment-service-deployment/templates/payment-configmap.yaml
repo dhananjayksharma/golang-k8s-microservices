@@ -4,8 +4,8 @@ metadata:
   name: {{ .Values.appname.name }}-config
   namespace: {{ .Values.appname.appns }}
 data:
-  MYSQL_HOST: mysql-2e9fea2e-dkgosql.a.aivencloud.com
-  MYSQL_PORT: "10473"
-  MYSQL_DB: defaultdb
-  MYSQL_PARAMS: "parseTime=true"
-  MYSQL_DBPEM: "certdbmysql/ca.pem"
+  LOCAL_DB: {{ .Values.config.localDb | quote }}
+  MYSQL_HOST: {{ .Values.config.mysqlHost | quote }}
+  MYSQL_PORT: {{ .Values.config.mysqlPort | quote }}
+  MYSQL_DB: {{ .Values.config.mysqlDb | quote }}
+  MYSQL_PARAMS: {{ .Values.config.mysqlParams | quote }}

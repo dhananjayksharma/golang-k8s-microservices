@@ -1,0 +1,26 @@
+environment: dev
+
+appname:
+  appns: payment-service-dev
+
+image:
+  tag: dev
+
+replicaCount: 1
+
+config:
+  localDb: "true"
+  mysqlHost: mysql-dev.example.internal
+  mysqlPort: "3306"
+  mysqlDb: payment_dev
+
+secrets:
+  existingSecretName: payment-service-dev-secret
+
+ingress:
+  enabled: true
+  host: payment-dev.local
+
+autoscaling:
+  minReplicas: 1
+  maxReplicas: 2

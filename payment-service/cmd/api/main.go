@@ -6,7 +6,9 @@ import (
 	"strconv"
 
 	"github.com/dhananjayksharma/golang-k8s-microservices/payment-service/internal/db"
+	"github.com/dhananjayksharma/golang-k8s-microservices/payment-service/internal/middleware"
 	"github.com/dhananjayksharma/golang-k8s-microservices/payment-service/internal/routes"
+	"golang.org/x/time/rate"
 	"gorm.io/gorm"
 
 	"github.com/gin-gonic/gin"
@@ -36,8 +38,16 @@ func main() {
 			log.Fatalf("db connect error: %v", err)
 		}
 	}
-
+	gin.SetMode(gin.DebugMode)
 	r := gin.Default()
+	var activeRateLimiter = "v2"
+	if activeRateLimiter == "v2" {
+		r.Use(middleware.RateLimiterMiddleware())
+	} else {
+		rl := middleware.NewIPRateLimiter(rate.Limit(5), 10)
+		r.Use(rl.Middleware())
+	}
+
 	routes.Register(r, gdb)
 
 	log.Println("listening on :8112")

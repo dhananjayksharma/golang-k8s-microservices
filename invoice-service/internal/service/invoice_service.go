@@ -18,6 +18,6 @@ func (s *InvoiceService) ListInvoices(ctx context.Context) ([]repository.Invoice
 	return s.repo.GetInvoices(ctx)
 }
 
-func (s *InvoiceService) GetInvoice(ctx context.Context, id string) (*repository.Invoice, error) {
-	return s.repo.GetInvoicesByID(ctx, id)
+func (s *InvoiceService) GetOrder(ctx context.Context, id string) (*repository.Invoice, error) {
+	return s.repo.GetOrderByID(ctx, id)
 }

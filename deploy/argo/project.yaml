@@ -10,7 +10,11 @@ spec:
   destinations:
     - namespace: argocd
       server: https://kubernetes.default.svc
-    - namespace: payment-service-namespace
+    - namespace: payment-service-dev
+      server: https://kubernetes.default.svc
+    - namespace: payment-service-preprod
+      server: https://kubernetes.default.svc
+    - namespace: payment-service-prod
       server: https://kubernetes.default.svc
     - namespace: inventory-service-namespace
       server: https://kubernetes.default.svc

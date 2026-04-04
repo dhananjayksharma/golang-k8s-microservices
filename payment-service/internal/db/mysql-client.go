@@ -51,7 +51,8 @@ func ConnectMySQLTLS(dsn string, capempath string) (*gorm.DB, error) {
 
 func ConnectMySQLNoTLS(dsn string) (*gorm.DB, error) {
 	cfg := &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Warn),
+		Logger: logger.Default.LogMode(logger.Info),
+		// LogLevel: logger.Info,
 	}
 
 	gdb, err := gorm.Open(mysql.Open(dsn), cfg)
