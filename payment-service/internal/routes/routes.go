@@ -4,13 +4,18 @@ import (
 	"net/http"
 
 	"github.com/dhananjayksharma/golang-k8s-microservices/payment-service/internal/handlers"
+	"github.com/dhananjayksharma/golang-k8s-microservices/payment-service/internal/utils"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
 func Register(r *gin.Engine, gdb *gorm.DB) {
-	r.GET("/healthz", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"newok": true}) })
+	r.GET("/healthz", func(c *gin.Context) {
+		utils.GetUnreachable("https://golang-k8s-microservices.onrender.com/v1/orders")
+		c.JSON(http.StatusOK, gin.H{"newok": true})
+
+	})
 
 	h := handlers.NewOrderHandler(gdb)
 	//r1 := middleware.NewIPRateLimiter(rate.Limit(10), 20)

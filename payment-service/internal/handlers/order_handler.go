@@ -70,6 +70,8 @@ func (h *OrderHandler) GetByID(c *gin.Context) {
 
 // GET /orders?customer_id=&status=&region=&engine=&limit=&offset=
 func (h *OrderHandler) List(c *gin.Context) {
+	// time.Sleep(70 * time.Second)
+
 	q := h.DB.Model(&models.Order{})
 
 	if v := strings.TrimSpace(c.Query("customer_id")); v != "" {
