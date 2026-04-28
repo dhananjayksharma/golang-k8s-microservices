@@ -11,10 +11,10 @@ import (
 func TestCircuitBreakerOpensAfterMaxFailures(t *testing.T) {
 	cb := NewCircuitBreaker(2, time.Hour)
 	downstreamErr := errors.New("downstream failed")
-	calls := 0
+	downstreamCalls := 0
 
 	fail := func() error {
-		calls++
+		downstreamCalls++
 		return downstreamErr
 	}
 
@@ -28,15 +28,19 @@ func TestCircuitBreakerOpensAfterMaxFailures(t *testing.T) {
 		t.Fatalf("status = %s, want %s", got, Open)
 	}
 
+	blockedCallReachedDownstream := false
 	err := cb.Execute(func() error {
-		calls++
+		blockedCallReachedDownstream = true
 		return nil
 	})
 	if !errors.Is(err, ErrCircuitOpen) {
 		t.Fatalf("third call error = %v, want %v", err, ErrCircuitOpen)
 	}
-	if calls != 2 {
-		t.Fatalf("downstream calls = %d, want 2", calls)
+	if blockedCallReachedDownstream {
+		t.Fatal("third call reached downstream, want circuit breaker to fail fast")
+	}
+	if downstreamCalls != 2 {
+		t.Fatalf("downstream calls = %d, want 2", downstreamCalls)
 	}
 }
 
