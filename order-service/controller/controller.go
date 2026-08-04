@@ -1,11 +1,17 @@
 package controller
 
 import (
+	"errors"
 	"fmt"
+	"time"
+
+	"order-service/internal/events"
+
+	"github.com/google/uuid"
 	"net/http"
 	"order-service/service"
 	"order-service/utility"
-	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -14,10 +20,8 @@ type OrderController struct {
 	orderService service.OrderService
 }
 
-func NewOrderController() OrderController {
-	return OrderController{
-		orderService: service.NewOrderService(),
-	}
+func NewOrderController(orderService service.OrderService) OrderController {
+	return OrderController{orderService: orderService}
 }
 
 func (c *OrderController) CreateOrder(ctx *gin.Context) {
@@ -26,47 +30,97 @@ func (c *OrderController) CreateOrder(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	created := c.orderService.Create(order)
-	orderDetail := fmt.Sprintf("New order created with ID: %s, Price:%v", strconv.Itoa(created.ID), order.Price)
-	utility.PublishOrderEvent(orderDetail)
-	ctx.JSON(http.StatusOK, created)
+
+	created, err := c.orderService.Create(ctx.Request.Context(), order)
+	if err != nil {
+		writeServiceError(ctx, err)
+		return
+	}
+
+	event := events.OrderCreated{
+		EventID: uuid.NewString(), EventType: events.RoutingOrderCreated, OccurredAt: time.Now().UTC(),
+		OrderID: created.ID, CustomerID: created.CustomerID, IdempotencyKey: created.IdempotencyKey,
+		Quantity: created.Quantity, UnitPrice: created.UnitPrice, Currency: created.Currency, TotalAmount: created.TotalAmount,
+	}
+	if err := utility.PublishJSON(ctx.Request.Context(), events.ExchangeOrders, events.RoutingOrderCreated, event); err != nil {
+		fmt.Printf("publish order.created event: %v\n", err)
+	}
+
+	ctx.JSON(http.StatusCreated, created)
 }
 
 func (c *OrderController) GetAllOrders(ctx *gin.Context) {
-	ctx.JSON(http.StatusOK, c.orderService.GetAll())
+	orders, err := c.orderService.GetAll(ctx.Request.Context())
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, orders)
 }
 
 func (c *OrderController) GetOrderByID(ctx *gin.Context) {
-	id, _ := strconv.Atoi(ctx.Param("id"))
-	order, found := c.orderService.GetByID(id)
-	if !found {
-		ctx.JSON(http.StatusNotFound, gin.H{"message": "order not found"})
+	id, ok := parseID(ctx)
+	if !ok {
+		return
+	}
+
+	order, err := c.orderService.GetByID(ctx.Request.Context(), id)
+	if err != nil {
+		writeServiceError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, order)
 }
 
 func (c *OrderController) UpdateOrder(ctx *gin.Context) {
-	id, _ := strconv.Atoi(ctx.Param("id"))
+	id, ok := parseID(ctx)
+	if !ok {
+		return
+	}
+
 	var order service.Order
 	if err := ctx.ShouldBindJSON(&order); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	updated, found := c.orderService.Update(id, order)
-	if !found {
-		ctx.JSON(http.StatusNotFound, gin.H{"message": "order not found"})
+
+	updated, err := c.orderService.Update(ctx.Request.Context(), id, order)
+	if err != nil {
+		writeServiceError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, updated)
 }
 
 func (c *OrderController) DeleteOrder(ctx *gin.Context) {
-	id, _ := strconv.Atoi(ctx.Param("id"))
-	success := c.orderService.Delete(id)
-	if !success {
-		ctx.JSON(http.StatusNotFound, gin.H{"message": "order not found"})
+	id, ok := parseID(ctx)
+	if !ok {
+		return
+	}
+
+	if err := c.orderService.Delete(ctx.Request.Context(), id); err != nil {
+		writeServiceError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{"message": "deleted successfully"})
+}
+
+func parseID(ctx *gin.Context) (string, bool) {
+	id := strings.TrimSpace(ctx.Param("id"))
+	if id == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "id is required"})
+		return "", false
+	}
+	return id, true
+}
+
+func writeServiceError(ctx *gin.Context, err error) {
+	switch {
+	case errors.Is(err, service.ErrOrderNotFound):
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "order not found"})
+	case errors.Is(err, service.ErrInvalidOrder):
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	default:
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	}
 }

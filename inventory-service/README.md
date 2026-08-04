@@ -7,3 +7,11 @@ data path:
 /Users/dkgosql/tmp/inventory-data
 file name: inventory-{orderid}.pdf
 
+
+## Inventory reservation integration
+See:
+- `docs/HLD.md`
+- `docs/LLD.md`
+- `docs/RUNBOOK.md`
+
+The service keeps existing invoice APIs and adds GORM-backed stock reservation plus RabbitMQ/Redis integration.
