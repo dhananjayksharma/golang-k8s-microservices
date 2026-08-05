@@ -2,3 +2,6 @@
 .vscode
 .liveenv
 .no_use-payment-service-deployment
+# Local secrets
+.env.local
+.env.local.* 
