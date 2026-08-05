@@ -28,13 +28,13 @@ type Kafka struct {
 
 func Load() Config {
 	return Config{
-		HTTPPort: mustInt(getenv("HTTP_PORT", "8915")),
+		HTTPPort: mustInt(getenv("HTTP_PORT", "8085")),
 		MySQL: MySQL{
 			User: getenv("DB_USER", "root"),
-			Pass: getenv("DB_PASS", "root#123PD"),
+			Pass: getenv("DB_PASS", "root"),
 			Host: getenv("DB_HOST", "127.0.0.1"),
 			Port: mustInt(getenv("DB_PORT", "3306")),
-			DB:   getenv("DB_NAME", "techies_cart_db"),
+			DB:   getenv("DB_NAME", "cartdb"),
 		},
 		Kafka: Kafka{
 			Brokers: strings.Split(getenv("KAFKA_BROKERS", "localhost:9092"), ","),

@@ -1,10 +1,16 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
+	"golang-k8s-microservices/inventory-service/internal/cache"
 	"golang-k8s-microservices/inventory-service/internal/db"
+	"golang-k8s-microservices/inventory-service/internal/events"
+	"golang-k8s-microservices/inventory-service/internal/inventory"
 	"golang-k8s-microservices/inventory-service/internal/logger"
 	"golang-k8s-microservices/inventory-service/internal/middleware"
 	"golang-k8s-microservices/inventory-service/internal/routes"
@@ -23,6 +29,20 @@ func main() {
 	if err != nil {
 		log.Fatalf("db connect error: %v", err)
 	}
+
+	stockService := inventory.NewService(gdb)
+	redisClient := cache.New()
+	defer redisClient.Close()
+	if err := stockService.Migrate(); err != nil {
+		log.Fatalf("inventory migrate: %v", err)
+	}
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	go func() {
+		if err := events.NewConsumer(stockService, redisClient.RDB).Run(ctx); err != nil {
+			log.Printf("rabbitmq consumer stopped: %v", err)
+		}
+	}()
 
 	logger.Init("dev")
 	defer logger.Log.Sync()
