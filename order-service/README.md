@@ -14,7 +14,7 @@ cd ../..
 
 ```bash
 export ORDER_PORT=8081
-export DATABASE_URL='postgres://order_user:order_password@localhost:5432/order_db?sslmode=disable'
+export DATABASE_URL='postgres://order_user:order_any@localhost:5432/order_db?sslmode=disable'
 ```
 
 ## Reset an incompatible local schema
@@ -65,13 +65,13 @@ curl -X POST http://localhost:8081/orders/ \
   -H 'Content-Type: application/json' \
   -d '{
     "customer_id": "22222222-2222-4222-8222-222222222222",
-    "idempotency_key": "mouse-order-005",
+    "idempotency_key": "mouse-order-0011",
     "sku": "MOUSE-001",
-    "quantity": 2,
+    "quantity": 5,
     "unit_price": 2225,
     "currency": "INR",
-    "tax_amount": 145,
-    "shipping_amount": 500
+    "tax_amount": 225,
+    "shipping_amount": 750
   }'
 ```
 

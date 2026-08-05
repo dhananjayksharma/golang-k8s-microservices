@@ -29,7 +29,7 @@ docker compose up -d
 
 ```bash
 migrate -path order-service/migrations \
-  -database 'postgres://order_user:order_password@localhost:5432/order_db?sslmode=disable' up
+  -database 'postgres://order_user:order_any@localhost:5432/order_db?sslmode=disable' up
 ```
 
 4. Implement PostgreSQL repository methods.

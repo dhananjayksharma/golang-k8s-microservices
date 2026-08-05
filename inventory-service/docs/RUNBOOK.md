@@ -9,7 +9,7 @@ RabbitMQ UI: `http://localhost:15672` (`admin` / `admin`).
 
 ## Inventory Service
 ```bash
-export MYSQL_DSN='root:root@tcp(localhost:3306)/appdb?parseTime=true'
+export MYSQL_DSN='root:rootany@tcp(localhost:3306)/appdb?parseTime=true'
 export REDIS_ADDR='localhost:6379'
 export RABBITMQ_URL='amqp://admin:admin@localhost:5672/'
 go mod tidy
@@ -23,7 +23,7 @@ docker compose -f deploy/local/docker-compose.yml exec -T mysql \
 
 ## Order Service
 ```bash
-export DATABASE_URL='postgres://order_user:order_password@localhost:5432/order_db?sslmode=disable'
+export DATABASE_URL='postgres://order_user:order_any@localhost:5432/order_db?sslmode=disable'
 export REDIS_ADDR='localhost:6379'
 export RABBITMQ_URL='amqp://admin:admin@localhost:5672/'
 export ORDER_PORT=8081

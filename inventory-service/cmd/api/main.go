@@ -21,7 +21,7 @@ import (
 func main() {
 	dsn := os.Getenv("MYSQL_DSN")
 	if dsn == "" || len(dsn) == 0 {
-		dsn = "root:root@tcp(localhost:3306)/appdb?parseTime=true"
+		dsn = "root:rootany@tcp(localhost:3306)/appdb?parseTime=true"
 		log.Fatalf("dsn string not found error: %v", dsn)
 	}
 
