@@ -14,6 +14,7 @@ type OrderCreated struct {
 	OrderID        string    `json:"order_id"`
 	CustomerID     string    `json:"customer_id"`
 	IdempotencyKey string    `json:"idempotency_key"`
+	SKU            string    `json:"sku"`
 	Quantity       int       `json:"quantity"`
 	UnitPrice      int64     `json:"unit_price"`
 	Currency       string    `json:"currency"`
@@ -24,6 +25,7 @@ type InventoryResult struct {
 	EventType     string    `json:"event_type"`
 	OccurredAt    time.Time `json:"occurred_at"`
 	OrderID       string    `json:"order_id"`
+	SKU           string    `json:"sku"`
 	ReservationID string    `json:"reservation_id,omitempty"`
 	Status        string    `json:"status"`
 	Reason        string    `json:"reason,omitempty"`

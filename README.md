@@ -39,3 +39,6 @@ kubectl apply -f argocd/root-application.yaml
 ```
 
 Argo CD will then auto-sync applications under `argocd/apps/`.
+
+
+bash -x ./setports.sh

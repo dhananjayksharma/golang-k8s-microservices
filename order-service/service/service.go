@@ -22,6 +22,7 @@ type Order struct {
 	ID             string    `json:"id"`
 	CustomerID     string    `json:"customer_id"`
 	IdempotencyKey string    `json:"idempotency_key"`
+	SKU            string    `json:"sku"`
 	RequestHash    string    `json:"request_hash"`
 	Quantity       int       `json:"quantity"`
 	UnitPrice      int64     `json:"unit_price"`
@@ -112,9 +113,10 @@ func normalizeForCreate(order Order) Order {
 		order.Version = 1
 	}
 	if order.RequestHash == "" {
-		sum := sha256.Sum256([]byte(fmt.Sprintf("%s|%s|%d|%d|%d|%d|%s",
+		sum := sha256.Sum256([]byte(fmt.Sprintf("%s|%s|%s|%d|%d|%d|%d|%s",
 			order.CustomerID,
 			order.IdempotencyKey,
+			order.SKU,
 			order.Quantity,
 			order.UnitPrice,
 			order.TaxAmount,

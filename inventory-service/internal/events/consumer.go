@@ -174,8 +174,9 @@ func (c *Consumer) handleMessage(
 
 	if processed {
 		log.Printf(
-			"duplicate event ignored: event_id=%s order_id=%s",
+			"duplicate event ignored: event_id=%s sku=%s order_id=%s",
 			event.EventID,
+			event.SKU,
 			event.OrderID,
 		)
 
@@ -211,11 +212,15 @@ func (c *Consumer) handleMessage(
 			}
 		}
 	}()
+	if event.SKU == "" {
+		_ = message.Nack(false, false)
+		return errors.New("order.created sku is required")
+	}
 
 	reservation, reserveErr := c.inventoryService.Reserve(
 		ctx,
 		event.OrderID,
-		"DEFAULT",
+		event.SKU,
 		int64(event.Quantity),
 	)
 
@@ -223,6 +228,7 @@ func (c *Consumer) handleMessage(
 		EventID:    uuid.NewString(),
 		OccurredAt: time.Now().UTC(),
 		OrderID:    event.OrderID,
+		SKU:        event.SKU,
 	}
 
 	routingKey := RoutingInventoryReserved

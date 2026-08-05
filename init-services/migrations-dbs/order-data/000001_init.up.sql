@@ -15,6 +15,7 @@ CREATE TABLE orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     customer_id UUID NOT NULL,
     idempotency_key VARCHAR(128) NOT NULL,
+    sku VARCHAR(100) NOT NULL,
     request_hash CHAR(64) NOT NULL,
     quantity INTEGER NOT NULL CHECK (quantity > 0),
     unit_price BIGINT NOT NULL CHECK (unit_price > 0),

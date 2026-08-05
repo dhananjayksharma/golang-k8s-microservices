@@ -19,11 +19,11 @@ func NewPostgresOrderRepository(db *sql.DB) *PostgresOrderRepository {
 func (r *PostgresOrderRepository) Create(ctx context.Context, order service.Order) (service.Order, error) {
 	const query = `
 		INSERT INTO orders (
-			customer_id, idempotency_key, request_hash, quantity, unit_price,
+			customer_id, idempotency_key, request_hash, sku, quantity, unit_price,
 			status, currency, subtotal, tax_amount, shipping_amount, total_amount, version
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-		RETURNING id, customer_id, idempotency_key, request_hash, quantity, unit_price,
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		RETURNING id, customer_id, idempotency_key, request_hash, sku, quantity, unit_price,
 			status::text, currency, subtotal, tax_amount, shipping_amount, total_amount,
 			version, created_at, updated_at`
 
@@ -32,6 +32,7 @@ func (r *PostgresOrderRepository) Create(ctx context.Context, order service.Orde
 		order.CustomerID,
 		order.IdempotencyKey,
 		order.RequestHash,
+		order.SKU,
 		order.Quantity,
 		order.UnitPrice,
 		order.Status,
@@ -46,6 +47,7 @@ func (r *PostgresOrderRepository) Create(ctx context.Context, order service.Orde
 		&created.CustomerID,
 		&created.IdempotencyKey,
 		&created.RequestHash,
+		&created.SKU,
 		&created.Quantity,
 		&created.UnitPrice,
 		&created.Status,
@@ -65,7 +67,7 @@ func (r *PostgresOrderRepository) Create(ctx context.Context, order service.Orde
 
 func (r *PostgresOrderRepository) GetAll(ctx context.Context) ([]service.Order, error) {
 	const query = `
-		SELECT id, customer_id, idempotency_key, request_hash, quantity, unit_price,
+		SELECT id, customer_id, idempotency_key, request_hash, sku, quantity, unit_price,
 			status::text, currency, subtotal, tax_amount, shipping_amount, total_amount,
 			version, created_at, updated_at
 		FROM orders
@@ -93,7 +95,7 @@ func (r *PostgresOrderRepository) GetAll(ctx context.Context) ([]service.Order, 
 
 func (r *PostgresOrderRepository) GetByID(ctx context.Context, id string) (service.Order, error) {
 	const query = `
-		SELECT id, customer_id, idempotency_key, request_hash, quantity, unit_price,
+		SELECT id, customer_id, idempotency_key, request_hash, sku, quantity, unit_price,
 			status::text, currency, subtotal, tax_amount, shipping_amount, total_amount,
 			version, created_at, updated_at
 		FROM orders
@@ -172,6 +174,7 @@ func scanOrder(row rowScanner) (service.Order, error) {
 		&order.CustomerID,
 		&order.IdempotencyKey,
 		&order.RequestHash,
+		&order.SKU,
 		&order.Quantity,
 		&order.UnitPrice,
 		&order.Status,

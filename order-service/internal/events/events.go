@@ -16,6 +16,7 @@ type OrderCreated struct {
 	OrderID        string    `json:"order_id"`
 	CustomerID     string    `json:"customer_id"`
 	IdempotencyKey string    `json:"idempotency_key"`
+	SKU            string    `json:"sku"`
 	Quantity       int       `json:"quantity"`
 	UnitPrice      int64     `json:"unit_price"`
 	Currency       string    `json:"currency"`

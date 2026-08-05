@@ -7,11 +7,12 @@ import (
 
 	"order-service/internal/events"
 
-	"github.com/google/uuid"
 	"net/http"
 	"order-service/service"
 	"order-service/utility"
 	"strings"
+
+	"github.com/google/uuid"
 
 	"github.com/gin-gonic/gin"
 )
@@ -39,7 +40,7 @@ func (c *OrderController) CreateOrder(ctx *gin.Context) {
 
 	event := events.OrderCreated{
 		EventID: uuid.NewString(), EventType: events.RoutingOrderCreated, OccurredAt: time.Now().UTC(),
-		OrderID: created.ID, CustomerID: created.CustomerID, IdempotencyKey: created.IdempotencyKey,
+		OrderID: created.ID, SKU: created.SKU, CustomerID: created.CustomerID, IdempotencyKey: created.IdempotencyKey,
 		Quantity: created.Quantity, UnitPrice: created.UnitPrice, Currency: created.Currency, TotalAmount: created.TotalAmount,
 	}
 	if err := utility.PublishJSON(ctx.Request.Context(), events.ExchangeOrders, events.RoutingOrderCreated, event); err != nil {

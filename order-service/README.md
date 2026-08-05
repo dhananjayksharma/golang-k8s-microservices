@@ -61,16 +61,17 @@ curl -i http://localhost:8081/health/ready
 All monetary values are in paise. The service calculates `subtotal`, `total_amount`, defaults `currency/status/version`, and generates `request_hash`.
 
 ```bash
-curl -i -X POST http://localhost:8081/orders/ \
+curl -X POST http://localhost:8081/orders/ \
   -H 'Content-Type: application/json' \
   -d '{
-    "customer_id":"22222222-2222-4222-8222-222222222222",
-    "idempotency_key":"create-order-003",
-    "quantity":2,
-    "unit_price":149900,
-    "currency":"INR",
-    "tax_amount":53964,
-    "shipping_amount":5000
+    "customer_id": "22222222-2222-4222-8222-222222222222",
+    "idempotency_key": "mouse-order-005",
+    "sku": "MOUSE-001",
+    "quantity": 2,
+    "unit_price": 2225,
+    "currency": "INR",
+    "tax_amount": 145,
+    "shipping_amount": 500
   }'
 ```
 

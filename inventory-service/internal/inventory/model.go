@@ -3,7 +3,7 @@ package inventory
 import "time"
 
 type StockItem struct {
-	ID        uint64    `gorm:"primaryKey;autoIncrement" json:"id"`
+	ID        string    `gorm:"type:char(36);primaryKey" json:"id"`
 	SKU       string    `gorm:"size:100;uniqueIndex;not null" json:"sku"`
 	Available int64     `gorm:"not null;default:0;check:available >= 0" json:"available"`
 	Reserved  int64     `gorm:"not null;default:0;check:reserved >= 0" json:"reserved"`
