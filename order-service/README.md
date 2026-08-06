@@ -101,3 +101,17 @@ go tool cover -html=coverage.out -o coverage.html
 
 ## Inventory integration
 See `docs/SERVICE_COMMUNICATION.md`. Order Service keeps `database/sql` and does not use GORM.
+
+## Unified response contract
+
+All JSON endpoints now use the OpenAPI contract in `docs/openapi.yaml`.
+
+```json
+{
+  "kind": "standard",
+  "data": {},
+  "meta": {"request_id": "..."}
+}
+```
+
+Errors use `kind=error` with `error.code` and `error.message`. Load tests have been updated to read order fields from `data`.

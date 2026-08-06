@@ -1,20 +1,18 @@
 package controller
 
 import (
-	"errors"
 	"fmt"
+	"net/http"
+	"strings"
 	"time"
 
+	"order-service/internal/api"
 	"order-service/internal/events"
-
-	"net/http"
 	"order-service/service"
 	"order-service/utility"
-	"strings"
-
-	"github.com/google/uuid"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type OrderController struct {
@@ -28,13 +26,13 @@ func NewOrderController(orderService service.OrderService) OrderController {
 func (c *OrderController) CreateOrder(ctx *gin.Context) {
 	var order service.Order
 	if err := ctx.ShouldBindJSON(&order); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		api.Failure(ctx, http.StatusBadRequest, "INVALID_REQUEST", "invalid request body", map[string]any{"cause": err.Error()})
 		return
 	}
 
 	created, err := c.orderService.Create(ctx.Request.Context(), order)
 	if err != nil {
-		writeServiceError(ctx, err)
+		api.ServiceError(ctx, err)
 		return
 	}
 
@@ -47,16 +45,16 @@ func (c *OrderController) CreateOrder(ctx *gin.Context) {
 		fmt.Printf("publish order.created event: %v\n", err)
 	}
 
-	ctx.JSON(http.StatusCreated, created)
+	api.Success(ctx, http.StatusCreated, created)
 }
 
 func (c *OrderController) GetAllOrders(ctx *gin.Context) {
 	orders, err := c.orderService.GetAll(ctx.Request.Context())
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		api.ServiceError(ctx, err)
 		return
 	}
-	ctx.JSON(http.StatusOK, orders)
+	api.Success(ctx, http.StatusOK, orders)
 }
 
 func (c *OrderController) GetOrderByID(ctx *gin.Context) {
@@ -67,10 +65,10 @@ func (c *OrderController) GetOrderByID(ctx *gin.Context) {
 
 	order, err := c.orderService.GetByID(ctx.Request.Context(), id)
 	if err != nil {
-		writeServiceError(ctx, err)
+		api.ServiceError(ctx, err)
 		return
 	}
-	ctx.JSON(http.StatusOK, order)
+	api.Success(ctx, http.StatusOK, order)
 }
 
 func (c *OrderController) UpdateOrder(ctx *gin.Context) {
@@ -81,16 +79,16 @@ func (c *OrderController) UpdateOrder(ctx *gin.Context) {
 
 	var order service.Order
 	if err := ctx.ShouldBindJSON(&order); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		api.Failure(ctx, http.StatusBadRequest, "INVALID_REQUEST", "invalid request body", map[string]any{"cause": err.Error()})
 		return
 	}
 
 	updated, err := c.orderService.Update(ctx.Request.Context(), id, order)
 	if err != nil {
-		writeServiceError(ctx, err)
+		api.ServiceError(ctx, err)
 		return
 	}
-	ctx.JSON(http.StatusOK, updated)
+	api.Success(ctx, http.StatusOK, updated)
 }
 
 func (c *OrderController) DeleteOrder(ctx *gin.Context) {
@@ -100,28 +98,21 @@ func (c *OrderController) DeleteOrder(ctx *gin.Context) {
 	}
 
 	if err := c.orderService.Delete(ctx.Request.Context(), id); err != nil {
-		writeServiceError(ctx, err)
+		api.ServiceError(ctx, err)
 		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{"message": "deleted successfully"})
+	api.NoContent(ctx)
 }
 
 func parseID(ctx *gin.Context) (string, bool) {
 	id := strings.TrimSpace(ctx.Param("id"))
 	if id == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "id is required"})
+		api.Failure(ctx, http.StatusBadRequest, "MISSING_ID", "id is required", nil)
+		return "", false
+	}
+	if _, err := uuid.Parse(id); err != nil {
+		api.Failure(ctx, http.StatusBadRequest, "INVALID_ID", "id must be a UUID", nil)
 		return "", false
 	}
 	return id, true
-}
-
-func writeServiceError(ctx *gin.Context, err error) {
-	switch {
-	case errors.Is(err, service.ErrOrderNotFound):
-		ctx.JSON(http.StatusNotFound, gin.H{"message": "order not found"})
-	case errors.Is(err, service.ErrInvalidOrder):
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-	default:
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-	}
 }

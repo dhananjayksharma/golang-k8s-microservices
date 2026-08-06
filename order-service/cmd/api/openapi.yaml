@@ -1,0 +1,82 @@
+openapi: 3.0.3
+
+info:
+  title: Order Service API
+  version: 1.0.0
+  description: REST API for creating and managing orders.
+
+servers:
+  - url: http://localhost:8081
+    description: Local Order Service
+
+tags:
+  - name: Health
+  - name: Orders
+
+components:
+  schemas:
+    ResponseKind:
+      type: string
+      enum:
+        - standard
+        - error
+        - verify_source
+
+    ResponseMeta:
+      type: object
+      properties:
+        request_id:
+          type: string
+          format: uuid
+        limit:
+          type: integer
+          minimum: 1
+        offset:
+          type: integer
+          minimum: 0
+        count:
+          type: integer
+          minimum: 0
+
+    ErrorDetail:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          example: INVALID_REQUEST
+        message:
+          type: string
+          example: Request validation failed
+        details:
+          type: object
+          additionalProperties: true
+
+    VerifySource:
+      type: object
+      required:
+        - source
+        - verified
+      properties:
+        source:
+          type: string
+        verified:
+          type: boolean
+
+    APIResponse:
+      type: object
+      required:
+        - kind
+      properties:
+        kind:
+          $ref: "#/components/schemas/ResponseKind"
+        data:
+          nullable: true
+        error:
+          $ref: "#/components/schemas/ErrorDetail"
+        verify_source:
+          $ref: "#/components/schemas/VerifySource"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"

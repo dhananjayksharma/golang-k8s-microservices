@@ -1,0 +1,20 @@
+services:
+  order-swagger:
+    image: docker.swagger.io/swaggerapi/swagger-ui
+    container_name: order-swagger-ui
+    environment:
+      SWAGGER_JSON: /spec/openapi.yaml
+    ports:
+      - "8088:8080"
+    volumes:
+      - ./order-service/cmd/api/openapi.yaml:/spec/openapi.yaml:ro
+
+  inventory-swagger:
+    image: docker.swagger.io/swaggerapi/swagger-ui
+    container_name: inventory-swagger-ui
+    environment:
+      SWAGGER_JSON: /spec/openapi.yaml
+    ports:
+      - "8089:8080"
+    volumes:
+      - ./inventory-service/cmd/api/openapi.yaml:/spec/openapi.yaml:ro
