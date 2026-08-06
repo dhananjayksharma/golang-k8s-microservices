@@ -3,6 +3,7 @@ package routes
 import (
 	"net/http"
 
+	"golang-k8s-microservices/inventory-service/internal/api"
 	"golang-k8s-microservices/inventory-service/internal/handlers"
 	"golang-k8s-microservices/inventory-service/internal/inventory"
 
@@ -11,33 +12,36 @@ import (
 )
 
 func Register(r *gin.Engine, gdb *gorm.DB) {
-	r.GET("/healthz", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"ok": true}) })
+	r.GET("/healthz", func(c *gin.Context) { api.Success(c, http.StatusOK, gin.H{"status": "ready"}) })
 
 	h := handlers.NewInvoiceHandler(gdb)
 	stockService := inventory.NewService(gdb)
 
 	v1 := r.Group("/v1")
 	{
-		v1.POST("/invoices", h.Create)
-		v1.GET("/invoices", h.List)
-		v1.GET("/invoices/:id", h.GetByID)
-		v1.PATCH("/invoices/:id", h.Update)
-		v1.DELETE("/invoices/:id", h.Delete)
-		v1.GET("/invoices/:id/:actions", h.InvoiceActions)
-		v1.GET("/invoices/inventory/:id", h.GetInventoryByID)
-
-	}
-	r.GET("/v1/inventory", func(c *gin.Context) {
-		items, err := stockService.List(c.Request.Context())
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
+		invoices := v1.Group("/invoices")
+		{
+			invoices.POST("", h.Create)
+			invoices.GET("", h.List)
+			invoices.GET("/:id", h.GetByID)
+			invoices.PATCH("/:id", h.Update)
+			invoices.DELETE("/:id", h.Delete)
+			invoices.GET("/:id/preview", h.Preview)
+			invoices.GET("/:id/download", h.Download)
+			invoices.GET("/:id/document", h.Generate)
+			invoices.POST("/:id/send-email", h.SendEmail)
+			invoices.POST("/:id/upload", h.Upload)
 		}
-		c.JSON(http.StatusOK, items)
-	})
 
-	v2 := r.Group("/v2")
-	{
-		v2.GET("/invoices", h.Listv2)
+		v1.GET("/inventory", func(c *gin.Context) {
+			items, err := stockService.List(c.Request.Context())
+			if err != nil {
+				api.DomainError(c, err)
+				return
+			}
+			api.Success(c, http.StatusOK, items)
+		})
 	}
+	v2 := r.Group("/v2")
+	v2.GET("/invoices", h.Listv2)
 }

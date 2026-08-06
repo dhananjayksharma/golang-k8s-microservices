@@ -5,15 +5,14 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
+	"golang-k8s-microservices/inventory-service/internal/api"
 	"golang-k8s-microservices/inventory-service/internal/logger"
 	"golang-k8s-microservices/inventory-service/internal/models"
-
-	ivhttp "golang-k8s-microservices/inventory-service/internal/utils/http"
 	"golang-k8s-microservices/inventory-service/internal/utils/pdf"
-	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -25,149 +24,278 @@ type InvoiceHandler struct {
 	DB *gorm.DB
 }
 
-func NewInvoiceHandler(db *gorm.DB) *InvoiceHandler {
-	return &InvoiceHandler{DB: db}
-}
+func NewInvoiceHandler(db *gorm.DB) *InvoiceHandler { return &InvoiceHandler{DB: db} }
 
-// POST /orders
 func (h *InvoiceHandler) Create(c *gin.Context) {
 	var req CreateInvoiceRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		api.Failure(c, http.StatusBadRequest, "INVALID_REQUEST", "invalid request body", map[string]any{"cause": err.Error()})
 		return
 	}
 
 	o := models.Order{
-		CustomerID:    req.CustomerID,
-		CustomerEmail: req.CustomerEmail,
-		DBName:        req.DBName,
-		DBEngine:      req.DBEngine,
-		DBVersion:     req.DBVersion,
-		StorageGB:     req.StorageGB,
-		Region:        req.Region,
-		PriceMonthly:  req.PriceMonthly,
-		//OrderStatus:   models.StatusCreated,
+		CustomerID: req.CustomerID, CustomerEmail: req.CustomerEmail, DBName: req.DBName,
+		DBEngine: req.DBEngine, DBVersion: req.DBVersion, StorageGB: req.StorageGB,
+		Region: req.Region, PriceMonthly: req.PriceMonthly,
 	}
-
 	if err := h.DB.Create(&o).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		api.DomainError(c, err)
 		return
 	}
-
-	c.JSON(http.StatusCreated, o)
+	api.Success(c, http.StatusCreated, o)
 }
 
-// GET /orders/:id
 func (h *InvoiceHandler) GetByID(c *gin.Context) {
-	id, err := parseUint64Param(c, "id")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+	id, ok := invoiceID(c)
+	if !ok {
 		return
 	}
 
-	var o models.Order
-	if err := h.DB.First(&o, "order_id = ?", id).Error; err != nil {
+	o, err := h.findOrder(id)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "order not found"})
+			api.Failure(c, http.StatusNotFound, "INVOICE_NOT_FOUND", "invoice not found", nil)
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		api.DomainError(c, err)
 		return
 	}
-
-	c.JSON(http.StatusOK, o)
+	api.Success(c, http.StatusOK, o)
 }
 
-// GET /orders/:id
-func (h *InvoiceHandler) GetInventoryByID(c *gin.Context) {
-	id, err := parseUint64Param(c, "id")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
-		return
-	}
+func (h *InvoiceHandler) List(c *gin.Context)   { h.list(c, false) }
+func (h *InvoiceHandler) Listv2(c *gin.Context) { h.list(c, true) }
 
-	logger.Log.Info("inventory",
-		zap.Uint64("id", id),
-	)
-	//url := "https://formatjsononline.com/api/users"
-	// OR internal
-	url := fmt.Sprintf("http://localhost:8114/v1/invoices/%d", id)
-
-	data, err := ivhttp.GetJSON(url)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
-
-	c.Data(http.StatusOK, "application/json", data)
-}
-
-func (h *InvoiceHandler) getOrderByID(id uint64) (models.Order, error) {
-	var o models.Order
-	err := h.DB.First(&o, "order_id = ?", id).Error
-	return o, err
-}
-
-// GET /orders?customer_id=&status=&region=&engine=&limit=&offset=
-func (h *InvoiceHandler) List(c *gin.Context) {
+func (h *InvoiceHandler) list(c *gin.Context, includeVersion bool) {
 	q := h.DB.Model(&models.Order{})
-
-	if v := strings.TrimSpace(c.Query("customer_id")); v != "" {
-		if id, err := strconv.ParseUint(v, 10, 64); err == nil {
-			q = q.Where("customer_id = ?", id)
-		} else {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid customer_id"})
+	if value := strings.TrimSpace(c.Query("customer_id")); value != "" {
+		id, err := strconv.ParseUint(value, 10, 64)
+		if err != nil {
+			api.Failure(c, http.StatusBadRequest, "INVALID_CUSTOMER_ID", "customer_id must be an unsigned integer", nil)
 			return
 		}
+		q = q.Where("customer_id = ?", id)
 	}
-
-	if v := strings.TrimSpace(c.Query("status")); v != "" {
-		q = q.Where("order_status = ?", v)
+	if value := strings.TrimSpace(c.Query("status")); value != "" {
+		q = q.Where("order_status = ?", value)
 	}
-	if v := strings.TrimSpace(c.Query("region")); v != "" {
-		q = q.Where("region = ?", v)
+	if value := strings.TrimSpace(c.Query("region")); value != "" {
+		q = q.Where("region = ?", value)
 	}
-	if v := strings.TrimSpace(c.Query("engine")); v != "" {
-		q = q.Where("db_engine = ?", v)
+	if value := strings.TrimSpace(c.Query("engine")); value != "" {
+		q = q.Where("db_engine = ?", value)
 	}
 
 	limit := parseIntWithDefault(c.Query("limit"), 20)
 	offset := parseIntWithDefault(c.Query("offset"), 0)
+	if limit < 1 {
+		limit = 20
+	}
 	if limit > 100 {
 		limit = 100
+	}
+	if offset < 0 {
+		offset = 0
 	}
 
 	var items []models.Order
 	if err := q.Order("order_id DESC").Limit(limit).Offset(offset).Find(&items).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		api.DomainError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"limit":  limit,
-		"offset": offset,
-		"items":  items,
-	})
+	data := map[string]any{"items": items}
+	if includeVersion {
+		data["contract_version"] = "2.0.0"
+	}
+	api.SuccessWithMeta(c, http.StatusOK, data, api.Meta{Limit: limit, Offset: offset, Count: len(items)})
 }
 
-// PATCH /orders/:id
 func (h *InvoiceHandler) Update(c *gin.Context) {
-	id, err := parseUint64Param(c, "id")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+	id, ok := invoiceID(c)
+	if !ok {
 		return
 	}
 
 	var req UpdateInvoiceRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		api.Failure(c, http.StatusBadRequest, "INVALID_REQUEST", "invalid request body", map[string]any{"cause": err.Error()})
+		return
+	}
+	updates := invoiceUpdates(req)
+	if len(updates) == 0 {
+		api.Failure(c, http.StatusBadRequest, "NO_CHANGES", "no fields to update", nil)
 		return
 	}
 
-	updates := map[string]any{}
+	result := h.DB.Model(&models.Order{}).Where("order_id = ?", id).Updates(updates)
+	if result.Error != nil {
+		api.DomainError(c, result.Error)
+		return
+	}
+	if result.RowsAffected == 0 {
+		api.Failure(c, http.StatusNotFound, "INVOICE_NOT_FOUND", "invoice not found", nil)
+		return
+	}
+	o, err := h.findOrder(id)
+	if err != nil {
+		api.DomainError(c, err)
+		return
+	}
+	api.Success(c, http.StatusOK, o)
+}
 
+func (h *InvoiceHandler) Delete(c *gin.Context) {
+	id, ok := invoiceID(c)
+	if !ok {
+		return
+	}
+	result := h.DB.Delete(&models.Order{}, "order_id = ?", id)
+	if result.Error != nil {
+		api.DomainError(c, result.Error)
+		return
+	}
+	if result.RowsAffected == 0 {
+		api.Failure(c, http.StatusNotFound, "INVOICE_NOT_FOUND", "invoice not found", nil)
+		return
+	}
+	api.NoContent(c)
+}
+
+func (h *InvoiceHandler) Preview(c *gin.Context) {
+	id, data, ok := h.invoiceData(c)
+	if !ok {
+		return
+	}
+	path, err := writeInvoiceFile(id, data)
+	if err != nil {
+		api.DomainError(c, err)
+		return
+	}
+	filename := filepath.Base(path)
+	c.Header("Content-Type", "application/pdf")
+	c.Header("Content-Disposition", fmt.Sprintf(`inline; filename="%s"`, filename))
+	c.Header("Cache-Control", "no-store")
+	c.File(path)
+}
+
+func (h *InvoiceHandler) Download(c *gin.Context) {
+	id, data, ok := h.invoiceData(c)
+	if !ok {
+		return
+	}
+	filename := fmt.Sprintf("inventory-%d.pdf", id)
+	c.Header("Content-Type", "application/pdf")
+	c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
+	if err := pdf.WriteInvoicePDF(c.Writer, data); err != nil {
+		api.DomainError(c, err)
+	}
+}
+
+func (h *InvoiceHandler) Generate(c *gin.Context) {
+	_, data, ok := h.invoiceData(c)
+	if !ok {
+		return
+	}
+	api.Success(c, http.StatusOK, data)
+}
+
+func (h *InvoiceHandler) SendEmail(c *gin.Context) {
+	id, data, ok := h.invoiceData(c)
+	if !ok {
+		return
+	}
+	path, err := writeInvoiceFile(id, data)
+	if err != nil {
+		api.DomainError(c, err)
+		return
+	}
+	if err := sendmailInvoice(id, data.Invoice.CustomerEmail, path); err != nil {
+		api.DomainError(c, err)
+		return
+	}
+	api.Success(c, http.StatusOK, map[string]any{"message": "inventory email sent successfully", "file": path})
+}
+
+func (h *InvoiceHandler) Upload(c *gin.Context) {
+	api.Failure(c, http.StatusNotImplemented, "NOT_IMPLEMENTED", "upload action is not implemented", nil)
+}
+
+func (h *InvoiceHandler) invoiceData(c *gin.Context) (uint64, pdf.InvoicePDFData, bool) {
+	id, ok := invoiceID(c)
+	if !ok {
+		return 0, pdf.InvoicePDFData{}, false
+	}
+	o, err := h.findOrder(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			api.Failure(c, http.StatusNotFound, "INVOICE_NOT_FOUND", "invoice not found", nil)
+		} else {
+			api.DomainError(c, err)
+		}
+		return 0, pdf.InvoicePDFData{}, false
+	}
+	return id, buildInvoiceData(id, o), true
+}
+
+func buildInvoiceData(id uint64, o models.Order) pdf.InvoicePDFData {
+	invoice := pdf.Invoice{ID: fmt.Sprintf("%d", id), CustomerName: fmt.Sprintf("Customer-%d", o.CustomerID), CustomerEmail: o.CustomerEmail, CreatedAt: o.CreatedAt, Currency: "INR", TaxPercent: 18}
+	items := []pdf.InvoiceItem{{Name: fmt.Sprintf("DB: %s (%s %s) %s", o.DBName, o.DBEngine, o.DBVersion, o.Region), Qty: 1, UnitPrice: o.PriceMonthly}}
+	tax := (o.PriceMonthly * invoice.TaxPercent) / 100
+	return pdf.InvoicePDFData{
+		CompanyName: "Payment Service Pvt Ltd", CompanyTax: "GSTIN: XX1234XXXX",
+		CompanyAddr: "Bengaluru, Karnataka, India", CompanyHelp: "support@company.com | +91-XXXXXXXXXX",
+		Invoice: invoice, Items: items,
+		Totals: pdf.Totals{SubTotal: o.PriceMonthly, TaxAmount: tax, GrandTotal: o.PriceMonthly + tax},
+	}
+}
+
+func writeInvoiceFile(id uint64, data pdf.InvoicePDFData) (string, error) {
+	dir := getenv("INVOICE_OUTPUT_DIR", filepath.Join(os.TempDir(), "inventory-data"))
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return "", err
+	}
+	path := filepath.Join(dir, fmt.Sprintf("inventory-%d.pdf", id))
+	file, err := os.Create(path)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+	if err := pdf.WriteInvoicePDF(file, data); err != nil {
+		return "", err
+	}
+	return path, nil
+}
+
+func (h *InvoiceHandler) findOrder(id uint64) (models.Order, error) {
+	var order models.Order
+	err := h.DB.First(&order, "order_id = ?", id).Error
+	return order, err
+}
+
+func invoiceID(c *gin.Context) (uint64, bool) {
+	id, err := strconv.ParseUint(strings.TrimSpace(c.Param("id")), 10, 64)
+	if err != nil || id == 0 {
+		api.Failure(c, http.StatusBadRequest, "INVALID_ID", "id must be a positive integer", nil)
+		return 0, false
+	}
+	return id, true
+}
+
+func parseIntWithDefault(value string, fallback int) int {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return fallback
+	}
+	parsed, err := strconv.Atoi(value)
+	if err != nil {
+		return fallback
+	}
+	return parsed
+}
+
+func invoiceUpdates(req UpdateInvoiceRequest) map[string]any {
+	updates := map[string]any{}
 	if req.CustomerEmail != nil {
 		updates["customer_email"] = *req.CustomerEmail
 	}
@@ -186,343 +314,41 @@ func (h *InvoiceHandler) Update(c *gin.Context) {
 	if req.Region != nil {
 		updates["region"] = *req.Region
 	}
-	// if req.OrderStatus != nil {
-	// 	updates["status"] = *req.OrderStatus
-	// }
+	if req.OrderStatus != nil {
+		updates["order_status"] = *req.OrderStatus
+	}
 	if req.PriceMonthly != nil {
 		updates["price_monthly"] = *req.PriceMonthly
 	}
-
-	if len(updates) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "no fields to update"})
-		return
-	}
-
-	res := h.DB.Model(&models.Order{}).Where("order_id = ?", id).Updates(updates)
-	if res.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": res.Error.Error()})
-		return
-	}
-	if res.RowsAffected == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "order not found"})
-		return
-	}
-
-	// return updated row
-	var o models.Order
-	if err := h.DB.First(&o, "order_id = ?", id).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, o)
+	return updates
 }
 
-// DELETE /orders/:id
-func (h *InvoiceHandler) Delete(c *gin.Context) {
-	id, err := parseUint64Param(c, "id")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
-		return
+func getenv(key, fallback string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
 	}
-
-	res := h.DB.Delete(&models.Order{}, "order_id = ?", id)
-	if res.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": res.Error.Error()})
-		return
-	}
-	if res.RowsAffected == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Invoice not found"})
-		return
-	}
-
-	c.Status(http.StatusNoContent)
+	return fallback
 }
 
-// helpers
-func parseUint64Param(c *gin.Context, name string) (uint64, error) {
-	return strconv.ParseUint(strings.TrimSpace(c.Param(name)), 10, 64)
-}
-
-func parseIntWithDefault(v string, def int) int {
-	v = strings.TrimSpace(v)
-	if v == "" {
-		return def
-	}
-	n, err := strconv.Atoi(v)
-	if err != nil {
-		return def
-	}
-	return n
-}
-
-// GET /orders?customer_id=&status=&region=&engine=&limit=&offset=
-func (h *InvoiceHandler) Listv2(c *gin.Context) {
-	q := h.DB.Model(&models.Order{})
-
-	if v := strings.TrimSpace(c.Query("customer_id")); v != "" {
-		if id, err := strconv.ParseUint(v, 10, 64); err == nil {
-			q = q.Where("customer_id = ?", id)
-		} else {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid customer_id"})
-			return
-		}
-	}
-
-	if v := strings.TrimSpace(c.Query("status")); v != "" {
-		q = q.Where("order_status = ?", v)
-	}
-	if v := strings.TrimSpace(c.Query("region")); v != "" {
-		q = q.Where("region = ?", v)
-	}
-	if v := strings.TrimSpace(c.Query("engine")); v != "" {
-		q = q.Where("db_engine = ?", v)
-	}
-
-	limit := parseIntWithDefault(c.Query("limit"), 20)
-	offset := parseIntWithDefault(c.Query("offset"), 0)
-	if limit > 100 {
-		limit = 100
-	}
-
-	var items []models.Order
-	if err := q.Order("order_id DESC").Limit(limit).Offset(offset).Find(&items).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"limit":  limit,
-		"offset": offset,
-		"items":  items,
-		"count":  len(items),
-		"tag":    "updated-version.2.2.0",
-	})
-}
-
-func (h *InvoiceHandler) InvoiceActions(c *gin.Context) {
-	id, err := parseUint64Param(c, "id")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
-		return
-	}
-
-	action := strings.ToLower(strings.TrimSpace(c.Query("action")))
-	if action == "" {
-		action = "preview"
-	}
-
-	// Fetch order
-	var o models.Order
-	if err := h.DB.First(&o, "order_id = ?", id).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "order not found"})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Map to PDF data
-	inv := pdf.Invoice{
-		ID:            fmt.Sprintf("%d", id),
-		CustomerName:  fmt.Sprintf("Customer-%d", o.CustomerID),
-		CustomerEmail: o.CustomerEmail,
-		CreatedAt:     o.CreatedAt,
-		Currency:      "INR",
-		TaxPercent:    18,
-	}
-
-	items := []pdf.InvoiceItem{
-		{
-			Name:      fmt.Sprintf("DB: %s (%s %s) %s", o.DBName, o.DBEngine, o.DBVersion, o.Region),
-			Qty:       1,
-			UnitPrice: o.PriceMonthly,
-		},
-	}
-
-	sub := o.PriceMonthly
-	tax := (sub * inv.TaxPercent) / 100
-
-	totals := pdf.Totals{
-		SubTotal:   sub,
-		TaxAmount:  tax,
-		Discount:   0,
-		GrandTotal: sub + tax,
-	}
-
-	data := pdf.InvoicePDFData{
-		CompanyName: "Payment Service Pvt Ltd",
-		CompanyTax:  "GSTIN: XX1234XXXX",
-		CompanyAddr: "Bengaluru, Karnataka, India",
-		CompanyHelp: "support@company.com | +91-XXXXXXXXXX",
-		Invoice:     inv,
-		Items:       items,
-		Totals:      totals,
-	}
-
-	//filename := fmt.Sprintf("inventory-%d.pdf", id)
-
-	switch action {
-
-	case "preview":
-
-		// Local directory
-		localDir := "/Users/dkgosql/tmp/inventory-data/"
-		// Ensure directory exists
-		if err := os.MkdirAll(localDir, 0o755); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-		filename := fmt.Sprintf("inventory-%d.pdf", id)
-		fullPath := filepath.Join(localDir, filename)
-		fmt.Println(fullPath)
-		// Create file locally
-		file, err := os.Create(fullPath)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-		// Write PDF into file
-		if err := pdf.WriteInvoicePDF(file, data); err != nil {
-			file.Close()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-		file.Close()
-
-		// Now preview from saved file
-		c.Header("Content-Type", "application/pdf")
-		c.Header("Content-Disposition", fmt.Sprintf(`inline; filename="%s"`, filename))
-		c.Header("Cache-Control", "no-store")
-
-		c.File(fullPath)
-		return
-
-	case "download":
-		// Force download
-		logger.Log.Info("inventory download",
-			zap.Uint64("order_id", id),
-		)
-
-		c.Header("Content-Type", "application/pdf")
-		c.Header("Content-Disposition", `attachment; filename="inventory-3.pdf"`)
-
-		pdf.WriteInvoicePDF(c.Writer, data)
-		// c.Header("Content-Type", "application/pdf")
-		// c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
-		// c.Header("Cache-Control", "no-store")
-
-		// if err := pdf.WriteInvoicePDF(c.Writer, data); err != nil {
-		// 	c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		// 	return
-		// }
-
-	case "generate":
-		// Return JSON
-		c.JSON(http.StatusOK, gin.H{
-			"inventory": data.Invoice,
-			"items":     data.Items,
-			"totals":    data.Totals,
-		})
-	case "sendemail":
-
-		localDir := "/Users/dkgosql/tmp/inventory-data/"
-		if err := os.MkdirAll(localDir, 0o755); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-		filename := fmt.Sprintf("inventory-%d.pdf", id)
-		fullPath := filepath.Join(localDir, filename)
-
-		// Create file
-		file, err := os.Create(fullPath)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-		if err := pdf.WriteInvoicePDF(file, data); err != nil {
-			file.Close()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		file.Close()
-
-		// Send email using generated file
-		if err := sendmailInvoice(id, o.CustomerEmail, fullPath); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-		c.JSON(http.StatusOK, gin.H{
-			"message": "inventory email sent successfully",
-			"file":    fullPath,
-		})
-		return
-
-	case "upload":
-		c.JSON(http.StatusNotImplemented, gin.H{
-			"message": "upload action not implemented yet",
-		})
-
-	default:
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "invalid action",
-			"allowed": []string{"preview", "download", "generate", "upload"},
-		})
-	}
-}
-
-func getenv(k, def string) string {
-	v := os.Getenv(k)
-	if v == "" {
-		return def
-	}
-	return v
-}
-
-func sendmailInvoice(orderID uint64, toEmail string, pdfPath string) error {
-
-	smtpHost := getenv("SMTP_HOST", "localhost")
-	smtpPortStr := getenv("SMTP_PORT", "1025")
-	smtpPort, err := strconv.Atoi(smtpPortStr)
+func sendmailInvoice(orderID uint64, toEmail, pdfPath string) error {
+	smtpPort, err := strconv.Atoi(getenv("SMTP_PORT", "1025"))
 	if err != nil {
 		return fmt.Errorf("invalid SMTP_PORT: %w", err)
 	}
-
-	from := getenv("MAIL_FROM", "billing@local.test")
-
 	if _, err := os.Stat(pdfPath); err != nil {
 		return fmt.Errorf("inventory pdf not found: %w", err)
 	}
 
-	subject := fmt.Sprintf("Invoice for Order #%d", orderID)
+	message := gomail.NewMessage()
+	message.SetHeader("From", getenv("MAIL_FROM", "billing@local.test"))
+	message.SetHeader("To", toEmail)
+	message.SetHeader("Subject", fmt.Sprintf("Invoice for Order #%d", orderID))
+	message.SetBody("text/plain", "Hi,\n\nPlease find your inventory attached.\n\nThanks,\nBilling Team\n")
+	message.Attach(pdfPath)
 
-	m := gomail.NewMessage()
-	m.SetHeader("From", from)
-	m.SetHeader("To", toEmail)
-	m.SetHeader("Subject", subject)
-
-	m.SetBody("text/plain",
-		"Hi,\n\nPlease find your inventory attached.\n\nThanks,\nBilling Team\n",
-	)
-
-	m.Attach(pdfPath)
-
-	d := gomail.NewDialer(smtpHost, smtpPort, "", "")
-
-	if err := d.DialAndSend(m); err != nil {
+	if err := gomail.NewDialer(getenv("SMTP_HOST", "localhost"), smtpPort, "", "").DialAndSend(message); err != nil {
 		return fmt.Errorf("failed to send email: %w", err)
 	}
-
-	logger.Log.Info("inventory email sent",
-		zap.Uint64("order_id", orderID),
-		zap.String("email", toEmail),
-	)
-
+	logger.Log.Info("inventory email sent", zap.Uint64("order_id", orderID), zap.String("email", toEmail))
 	return nil
 }

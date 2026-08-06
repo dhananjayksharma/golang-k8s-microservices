@@ -1,0 +1,22 @@
+[
+ {
+  "Description": "Generic API Key",
+  "StartLine": 8,
+  "EndLine": 8,
+  "StartColumn": 4,
+  "EndColumn": 31,
+  "Match": "password: \"REDACTED\"",
+  "Secret": "REDACTED",
+  "File": "payment-service-deployment/dkgosql-mongodb-crds/mongodb-community-password.yaml",
+  "SymlinkFile": "",
+  "Commit": "33fa79430ce8d5a03d269e2919bd26ae2132a5fb",
+  "Entropy": 3.5778196,
+  "Author": "dhananjay sharma",
+  "Email": "dhananjayksharma@gmail.com",
+  "Date": "2026-02-14T17:05:53Z",
+  "Message": "init",
+  "Tags": [],
+  "RuleID": "generic-api-key",
+  "Fingerprint": "33fa79430ce8d5a03d269e2919bd26ae2132a5fb:payment-service-deployment/dkgosql-mongodb-crds/mongodb-community-password.yaml:generic-api-key:8"
+ }
+]
