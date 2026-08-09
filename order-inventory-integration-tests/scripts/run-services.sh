@@ -18,7 +18,7 @@ mkdir -p "$LOG_DIR" "$PID_DIR"
 
 (
   cd "$ORDER_SERVICE_DIR"
-  DATABASE_URL='postgres://order_user:order_password@localhost:15432/order_db?sslmode=disable' \
+  DATABASE_URL='postgres://order_user:order_dummy@localhost:15432/order_db?sslmode=disable' \
   REDIS_ADDR='localhost:16379' \
   RABBITMQ_URL='amqp://admin:admin@localhost:15672/' \
   ORDER_PORT='18081' \

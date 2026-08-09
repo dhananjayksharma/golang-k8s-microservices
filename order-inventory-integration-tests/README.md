@@ -166,8 +166,8 @@ Reserved: exactly 10
 ```bash
 ORDER_BASE_URL=http://localhost:18081
 INVENTORY_BASE_URL=http://localhost:8914
-POSTGRES_URL='postgres://order_user:order_password@localhost:15432/order_db?sslmode=disable'
-MYSQL_DSN='root:root@tcp(localhost:13306)/appdb?parseTime=true'
+POSTGRES_URL='postgres://order_user:order_dummy@localhost:15432/order_db?sslmode=disable'
+MYSQL_DSN='root:root_dummy@tcp(localhost:13306)/appdb?parseTime=true'
 RABBITMQ_URL='amqp://admin:admin@localhost:15672/'
 ```
 

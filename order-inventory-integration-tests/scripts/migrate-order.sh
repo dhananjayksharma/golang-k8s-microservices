@@ -7,5 +7,5 @@ docker run --rm --network host \
   -v "$ORDER_SERVICE_DIR/migrations:/migrations:ro" \
   migrate/migrate:v4.19.1 \
   -path=/migrations \
-  -database='postgres://order_user:order_password@localhost:15432/order_db?sslmode=disable' \
+  -database='postgres://order_user:order_dummy@localhost:15432/order_db?sslmode=disable' \
   up

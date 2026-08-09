@@ -16,7 +16,8 @@ func New() *Client {
 	if addr == "" {
 		addr = "localhost:6379"
 	}
-	return &Client{RDB: redis.NewClient(&redis.Options{Addr: addr, Password: os.Getenv("REDIS_PASSWORD"), DB: 0})}
+	// Username: os.Getenv("REDIS_USERNAME"),
+	return &Client{redis.NewClient(&redis.Options{Addr: addr, Password: os.Getenv("REDIS_PASSWORD"), DB: 0})}
 }
 func (c *Client) Ping(ctx context.Context) error { return c.RDB.Ping(ctx).Err() }
 func (c *Client) Close() error                   { return c.RDB.Close() }

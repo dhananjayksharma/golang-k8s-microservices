@@ -22,7 +22,7 @@ import (
 var (
 	orderBaseURL     = envOr("ORDER_BASE_URL", "http://localhost:18081")
 	inventoryBaseURL = envOr("INVENTORY_BASE_URL", "http://localhost:8914")
-	postgresURL      = envOr("POSTGRES_URL", "postgres://order_user:order_password@localhost:15432/order_db?sslmode=disable")
+	postgresURL      = envOr("POSTGRES_URL", "postgres://order_user:order_dummy@localhost:15432/order_db?sslmode=disable")
 	mysqlDSN         = envOr("MYSQL_DSN", "root:root@tcp(localhost:13306)/appdb?parseTime=true")
 	rabbitMQURL      = envOr("RABBITMQ_URL", "amqp://admin:admin@localhost:15672/")
 )

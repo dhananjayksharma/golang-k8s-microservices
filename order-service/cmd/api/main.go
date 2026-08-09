@@ -31,7 +31,7 @@ func main() {
 
 	db, err := database.OpenPostgres()
 	if err != nil {
-		log.Fatalf("database initialization failed: %v", err)
+		log.Fatalf("database initialization failed, please check all the configurations: %v", err)
 	}
 	defer func() {
 		if err := db.Close(); err != nil {
